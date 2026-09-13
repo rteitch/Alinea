@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../glossary/presentation/glossary_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -527,6 +528,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       );
                     },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // SECTION: Glosarium & Istilah
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.menu_book_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Kamus Glosarium & Istilah',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Kunci dan kelola terjemahan istilah khusus agar selalu diterjemahkan konsisten di setiap buku.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const GlossaryScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.auto_stories_rounded, size: 18),
+                    label: const Text('Buka Pengelola Glosarium'),
                   ),
                 ],
               ),

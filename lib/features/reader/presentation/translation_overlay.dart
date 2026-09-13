@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../settings/presentation/settings_screen.dart';
 
+import '../../../core/services/tts_service.dart';
+
 class TranslationOverlay extends ConsumerStatefulWidget {
   final int bookId;
   final String selectedText;
@@ -49,7 +51,8 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
   String? _translatedText;
   String? _errorMessage;
   bool _isFromCache = false;
-  final String _style = 'natural';
+  bool _isSpeaking = false;
+  String _style = 'natural'; // 'natural', 'literal', 'academic'
   late String _activeTargetLang;
 
   @override
@@ -57,6 +60,12 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
     super.initState();
     _activeTargetLang = widget.targetLanguage;
     _performTranslation();
+  }
+
+  @override
+  void dispose() {
+    ref.read(ttsServiceProvider).stop();
+    super.dispose();
   }
 
   Future<void> _performTranslation() async {
@@ -222,7 +231,54 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
               ),
             ],
           ),
-          const Divider(height: 24),
+          const Divider(height: 20),
+
+          // Translation Style Selector (PRD Section 6.1)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                Text(
+                  'Gaya Terjemahan:',
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Alami (Natural)', style: TextStyle(fontSize: 11)),
+                  selected: _style == 'natural',
+                  onSelected: (selected) {
+                    if (selected && _style != 'natural') {
+                      setState(() => _style = 'natural');
+                      _performTranslation();
+                    }
+                  },
+                ),
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: const Text('Harfiah (Literal)', style: TextStyle(fontSize: 11)),
+                  selected: _style == 'literal',
+                  onSelected: (selected) {
+                    if (selected && _style != 'literal') {
+                      setState(() => _style = 'literal');
+                      _performTranslation();
+                    }
+                  },
+                ),
+                const SizedBox(width: 6),
+                ChoiceChip(
+                  label: const Text('Akademis', style: TextStyle(fontSize: 11)),
+                  selected: _style == 'academic',
+                  onSelected: (selected) {
+                    if (selected && _style != 'academic') {
+                      setState(() => _style = 'academic');
+                      _performTranslation();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
 
           // Content section
           Flexible(
@@ -371,21 +427,54 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Salin'),
-                onPressed: _translatedText != null
-                    ? () {
-                        Clipboard.setData(ClipboardData(text: _translatedText!));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Terjemahan disalin ke clipboard.')),
-                        );
-                      }
-                    : null,
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    icon: Icon(
+                      _isSpeaking ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                      size: 16,
+                      color: _isSpeaking ? Colors.red : null,
+                    ),
+                    label: Text(_isSpeaking ? 'Berhenti' : 'Dengarkan'),
+                    onPressed: _translatedText != null
+                        ? () async {
+                            final tts = ref.read(ttsServiceProvider);
+                            if (_isSpeaking) {
+                              await tts.stop();
+                              setState(() => _isSpeaking = false);
+                            } else {
+                              setState(() => _isSpeaking = true);
+                              tts.onStateChanged = (state) {
+                                if (mounted) {
+                                  setState(() => _isSpeaking = state == TtsState.playing);
+                                }
+                              };
+                              await tts.speak(_translatedText!, language: _activeTargetLang);
+                            }
+                          }
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.copy, size: 16),
+                    label: const Text('Salin'),
+                    onPressed: _translatedText != null
+                        ? () {
+                            Clipboard.setData(ClipboardData(text: _translatedText!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Terjemahan disalin ke clipboard.'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        : null,
+                  ),
+                ],
               ),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                label: const Text('Kunci di Glosarium'),
+                label: const Text('Glosarium'),
                 onPressed: _translatedText != null ? _handleSaveToGlossary : null,
               ),
             ],

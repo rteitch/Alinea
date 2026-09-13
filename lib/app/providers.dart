@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/services/tts_service.dart';
 import '../core/storage/database.dart';
 import '../core/storage/settings_repository.dart';
 import '../features/bookmarks/data/bookmark_repository.dart';
@@ -37,6 +38,13 @@ final glossaryRepositoryProvider = Provider<GlossaryRepository>((ref) {
 
 final translationCacheRepositoryProvider = Provider<TranslationCacheRepository>((ref) {
   return TranslationCacheRepository(db: ref.watch(databaseProvider));
+});
+
+// Audio & TTS
+final ttsServiceProvider = Provider<TtsService>((ref) {
+  final service = TtsService();
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
 // Settings & Preferences
