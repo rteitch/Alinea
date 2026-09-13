@@ -115,6 +115,7 @@ class TranslationCache extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get sourceLanguage => text()();
   TextColumn get targetLanguage => text()();
+  TextColumn get sourceText => text().nullable()();
   TextColumn get sourceTextHash => text()();
   TextColumn get translatedText => text()();
   TextColumn get provider => text()();

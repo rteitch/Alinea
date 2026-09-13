@@ -246,7 +246,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.65,
+                    childAspectRatio: 0.58,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
                   ),
@@ -298,9 +298,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Widget _buildFilterChip(String label, String value, String currentFilter) {
     final isSelected = currentFilter == value;
+    final theme = Theme.of(context);
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+        ),
+      ),
       selected: isSelected,
+      selectedColor: theme.colorScheme.primary,
+      checkmarkColor: theme.colorScheme.onPrimary,
+      backgroundColor: theme.colorScheme.surface,
+      side: BorderSide(
+        color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withAlpha(80),
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onSelected: (_) {
         ref.read(libraryFilterProvider.notifier).state = value;
       },
@@ -384,8 +399,8 @@ class _BookCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progressAsync = ref.watch(
-      FutureProvider.autoDispose<ReadingProgressData?>((r) {
-        return r.watch(bookRepositoryProvider).getReadingProgress(book.id);
+      FutureProvider.autoDispose<double>((r) {
+        return r.watch(bookRepositoryProvider).getOverallProgressPct(book.id);
       }),
     );
 
@@ -483,45 +498,49 @@ class _BookCard extends ConsumerWidget {
                           ),
                       ],
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        progressAsync.when(
-                          data: (progress) {
-                            final pct = progress?.scrollPct ?? 0.0;
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    progressAsync.when(
+                      data: (pct) {
+                        final pctInt = (pct * 100).toInt();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                LinearProgressIndicator(
-                                  value: pct,
-                                  minHeight: 4,
-                                  borderRadius: BorderRadius.circular(2),
+                                Text(
+                                  _statusLabel(book.readingStatus),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: _statusColor(book.readingStatus),
+                                  ),
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _statusLabel(book.readingStatus),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                        color: _statusColor(book.readingStatus),
-                                      ),
-                                    ),
-                                    Text(
-                                      '${(pct * 100).toInt()}%',
-                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
+                                Text(
+                                  '$pctInt% selesai',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
                                 ),
                               ],
-                            );
-                          },
-                          loading: () => const LinearProgressIndicator(minHeight: 4),
-                          error: (_, _) => const SizedBox(),
-                        ),
-                      ],
+                            ),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: pct.clamp(0.0, 1.0),
+                                minHeight: 4.5,
+                                backgroundColor: Theme.of(context).colorScheme.outlineVariant.withAlpha(90),
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox(height: 20),
+                      error: (_, _) => const SizedBox(),
                     ),
                   ],
                 ),

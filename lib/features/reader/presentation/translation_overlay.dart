@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../../app/providers.dart';
 import '../../settings/presentation/settings_screen.dart';
 
-import '../../../core/services/tts_service.dart';
 
 class TranslationOverlay extends ConsumerStatefulWidget {
   final int bookId;
@@ -52,19 +52,44 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
   String? _errorMessage;
   bool _isFromCache = false;
   bool _isSpeaking = false;
+  String _ttsError = '';
   String _style = 'natural'; // 'natural', 'literal', 'academic'
   late String _activeTargetLang;
+
+  // Own a private TTS instance so it doesn't conflict with the reader's TTS
+  final FlutterTts _tts = FlutterTts();
 
   @override
   void initState() {
     super.initState();
     _activeTargetLang = widget.targetLanguage;
+    _initTts();
     _performTranslation();
+  }
+
+  void _initTts() {
+    _tts.setStartHandler(() {
+      if (mounted) setState(() { _isSpeaking = true; _ttsError = ''; });
+    });
+    _tts.setCompletionHandler(() {
+      if (mounted) setState(() => _isSpeaking = false);
+    });
+    _tts.setCancelHandler(() {
+      if (mounted) setState(() => _isSpeaking = false);
+    });
+    _tts.setErrorHandler((msg) {
+      if (mounted) {
+        setState(() {
+          _isSpeaking = false;
+          _ttsError = 'TTS Error: $msg';
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    ref.read(ttsServiceProvider).stop();
+    _tts.stop();
     super.dispose();
   }
 
@@ -93,8 +118,24 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
       }
     } catch (e) {
       if (mounted) {
+        // Strip exception class prefix for clean display
+        String rawMsg = e.toString();
+        rawMsg = rawMsg
+            .replaceAll(RegExp(r'^TranslationException:\s*'), '')
+            .replaceAll(RegExp(r'^Exception:\s*'), '')
+            .trim();
+
+        // If it still contains raw Dio debug text, replace with friendly message
+        final bool isDioDebugText = rawMsg.contains('RequestOptions') ||
+            rawMsg.contains('validateStatus') ||
+            rawMsg.contains('status code of') ||
+            rawMsg.contains('developer.mozilla.org');
+        final String cleanMsg = isDioDebugText
+            ? 'Koneksi ke mesin terjemahan gagal (HTTP error). Coba lagi atau ganti mesin di Pengaturan.'
+            : (rawMsg.isEmpty ? 'Terjemahan gagal. Coba lagi.' : rawMsg);
+
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = cleanMsg;
           _isLoading = false;
         });
       }
@@ -187,7 +228,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.translate, size: 20, color: Color(0xFF2C5E8A)),
+                  Icon(Icons.translate, size: 20, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: 8),
                   Text(
                     'Terjemahan Alinea',
@@ -424,58 +465,84 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
           const SizedBox(height: 12),
 
           // Bottom Action Buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    icon: Icon(
-                      _isSpeaking ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
-                      size: 16,
-                      color: _isSpeaking ? Colors.red : null,
-                    ),
-                    label: Text(_isSpeaking ? 'Berhenti' : 'Dengarkan'),
-                    onPressed: _translatedText != null
-                        ? () async {
-                            final tts = ref.read(ttsServiceProvider);
-                            if (_isSpeaking) {
-                              await tts.stop();
-                              setState(() => _isSpeaking = false);
-                            } else {
-                              setState(() => _isSpeaking = true);
-                              tts.onStateChanged = (state) {
-                                if (mounted) {
-                                  setState(() => _isSpeaking = state == TtsState.playing);
-                                }
-                              };
-                              await tts.speak(_translatedText!, language: _activeTargetLang);
-                            }
-                          }
-                        : null,
+              if (_ttsError.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '⚠️ $_ttsError',
+                    style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.copy, size: 16),
-                    label: const Text('Salin'),
-                    onPressed: _translatedText != null
-                        ? () {
-                            Clipboard.setData(ClipboardData(text: _translatedText!));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Terjemahan disalin ke clipboard.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        : null,
+                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        icon: Icon(
+                          _isSpeaking ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
+                          size: 16,
+                          color: _isSpeaking ? Colors.red : null,
+                        ),
+                        label: Text(_isSpeaking ? 'Berhenti' : 'Dengarkan'),
+                        onPressed: _translatedText != null
+                            ? () async {
+                                if (_isSpeaking) {
+                                  await _tts.stop();
+                                  if (mounted) setState(() { _isSpeaking = false; });
+                                } else {
+                                  if (mounted) setState(() { _ttsError = ''; });
+                                  // Map language code to locale
+                                  final localeMap = {
+                                    'id': 'id-ID', 'en': 'en-US', 'ja': 'ja-JP',
+                                    'zh': 'zh-CN', 'de': 'de-DE', 'fr': 'fr-FR',
+                                    'es': 'es-ES', 'ar': 'ar-SA',
+                                  };
+                                  final locale = localeMap[_activeTargetLang] ?? 'id-ID';
+                                  try {
+                                    await _tts.setLanguage(locale);
+                                    await _tts.setSpeechRate(0.5);
+                                    await _tts.setPitch(1.0);
+                                    await _tts.speak(_translatedText!);
+                                  } catch (e) {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isSpeaking = false;
+                                        _ttsError = 'Tidak bisa memutar suara. Pastikan TTS bahasa tersedia di perangkat.';
+                                      });
+                                    }
+                                  }
+                                }
+                              }
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.copy, size: 16),
+                        label: const Text('Salin'),
+                        onPressed: _translatedText != null
+                            ? () {
+                                Clipboard.setData(ClipboardData(text: _translatedText!));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Terjemahan disalin ke clipboard.'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            : null,
+                      ),
+                    ],
+                  ),
+                  FilledButton.tonalIcon(
+                    icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                    label: const Text('Glosarium'),
+                    onPressed: _translatedText != null ? _handleSaveToGlossary : null,
                   ),
                 ],
-              ),
-              FilledButton.tonalIcon(
-                icon: const Icon(Icons.bookmark_add_outlined, size: 16),
-                label: const Text('Glosarium'),
-                onPressed: _translatedText != null ? _handleSaveToGlossary : null,
               ),
             ],
           ),

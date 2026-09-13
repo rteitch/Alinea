@@ -1,4 +1,13 @@
-# Alinea — FOSS EPUB Reader & In-Place Translation Engine
+<p align="center">
+  <img src="assets/images/logo.png" width="160" height="160" alt="Alinea App Icon" />
+</p>
+
+<h1 align="center">Alinea</h1>
+
+<p align="center">
+  <strong>FOSS EPUB Reader & In-Place Translation Engine</strong><br/>
+  <em>"Read first, translate seamlessly when needed — 100% Free, 100% FOSS, $0 Marginal Cost."</em>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android" />
@@ -6,13 +15,12 @@
   <img src="https://img.shields.io/badge/Language-Dart%203.x-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart" />
   <img src="https://img.shields.io/badge/Database-Drift%20(SQLite)-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="Drift" />
   <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Testing-ISTQB%20Compliant%20(100%25)-4CAF50?style=for-the-badge" alt="ISTQB" />
+  <img src="https://img.shields.io/badge/Testing-ISTQB%20(48%2F48%20Passed)-4CAF50?style=for-the-badge" alt="ISTQB" />
+  <img src="https://img.shields.io/badge/Status-Release%20APK%20Ready-success?style=for-the-badge" alt="Status" />
   <img src="https://img.shields.io/badge/License-MIT%20%2F%20FOSS-blue?style=for-the-badge" alt="License" />
 </p>
 
-> **"Read first, translate seamlessly when needed — 100% Free, 100% FOSS, $0 Marginal Cost."**
-
-**Alinea** (derived from the word for *paragraph*) is a modern, privacy-respecting digital book reader (EPUB) for Android. It bridges long-form reading with instantaneous, in-place machine translation powered by open-source translation engines (**LibreTranslate + Argos Translate**).
+> **Alinea** (derived from the word for *paragraph*) is a modern, privacy-respecting digital book reader (EPUB) for Android. It bridges long-form reading with instantaneous, in-place machine translation powered by open-source translation engines (**LibreTranslate + Argos Translate**).
 
 Unlike conventional reader applications that require clumsy copy-pasting to external translator apps or charge recurring per-character fees via proprietary cloud APIs, Alinea delivers a **zero marginal cost ($0)** experience with robust offline-first caching, scoped terminology locking, and an elegant distraction-free reading environment.
 
@@ -69,6 +77,33 @@ Unlike conventional reader applications that require clumsy copy-pasting to exte
   - **AMOLED (`#000000`):** Pitch black mode optimizing power consumption on OLED/AMOLED displays.
 - **Dynamic Font Scaling:** Smooth real-time typography slider ranging from 12sp to 28sp.
 - **Reading Progress State Engine:** Automatically tracks scroll percentage and updates reading status (`unread` $\rightarrow$ `in_progress` $\rightarrow$ `finished`).
+
+### 🖍️ 6. Visual In-Text Highlighting
+- **Embedded Color Spans:** Highlights are rendered directly into the paragraph flow using semi-transparent, comfortable tinting:
+  - 🟡 **Yellow** (`#FFF59D`)
+  - 🟢 **Green** (`#A5D6A7`)
+  - 🔵 **Blue** (`#90CAF9`)
+  - 🔴 **Pink** (`#F48FB1`)
+- **Seamless Interaction:** Highlighted passages can still be re-selected, translated, or annotated without breaking the document stream.
+
+### 📓 7. Translation History & Vocabulary Notebook
+- **Dedicated Vocab Hub:** Review all past lookups stored in the offline SQLite cache.
+- **Instant Search:** Filter through original phrases and translated results in real time.
+- **1-Tap Glossary Pinning:** Lock any translated term into your permanent terminology glossary with one tap.
+- **Usage Frequency:** Live badge tracking (`hitCount`) showing how often words recur across your reading.
+
+### 📊 8. Precision Shelf Progress Tracking
+- **Accurate Book Progress:** Calculated dynamically using chapter position and scroll percentage:
+  $$\text{Progress} = \frac{\text{Current Chapter Index} + \text{Scroll Percentage}}{\text{Total Chapters}} \times 100\%$$
+- **Visual Feedback:** Horizontal `LinearProgressIndicator` and exact percentages (`65% selesai`) on every library book card.
+
+### 📤 9. One-Click Markdown Export (Notion & Obsidian)
+- **Comprehensive Summary:** Export complete book study notes formatted in clean GitHub-Flavored Markdown.
+- **Included Sections:** Book metadata, highlighted quotes with chapter labels and personal thoughts, bookmarks with dates, and book-scoped glossary definitions.
+- **Clipboard Preview:** Fast modal preview with one-tap copy directly into personal knowledge management tools like Notion, Obsidian, Logseq, or Google Keep.
+
+### 🔊 10. Voice Audio Pronunciation (Text-to-Speech)
+- **Instant Listening:** Listen to native pronunciations of foreign words or translated sentences directly within the translation bottom sheet or from the Vocabulary Notebook.
 
 ---
 
@@ -181,9 +216,10 @@ Alinea enforces rigorous automated testing aligned with **ISTQB (International S
 
 ### Test Execution Summary
 ```text
-✅ Flutter Client Tests:  38 / 38 passed (100%)
-✅ Static Analysis:       0 Errors, 0 Warnings (dart analyze)
+✅ Flutter Client Tests:  48 / 48 passed (100%)
+✅ Static Analysis:       0 Errors, 0 Warnings, 0 Lints (dart analyze)
 ✅ FastAPI Backend Tests: 4 / 4 passed (pytest)
+✅ Android Release Build: 59.2 MB standalone APK compiled
 ```
 
 ---
@@ -199,8 +235,8 @@ Alinea enforces rigorous automated testing aligned with **ISTQB (International S
 ### 1. Running the Flutter Client
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/alinea.git
-cd alinea
+git clone https://github.com/rteitch/Alinea.git
+cd Alinea
 
 # Get dependencies
 flutter pub get
@@ -242,6 +278,8 @@ docker compose up -d
 ```text
 Alinea/
 ├── android/                     # Native Android Gradle configuration & manifest
+├── assets/                      # Application brand assets & app icons
+│   └── images/logo.png          # Alinea high-res squircle icon
 ├── backend/                     # Translation Gateway service
 │   ├── app/
 │   │   ├── main.py              # FastAPI server & route handlers
@@ -260,12 +298,12 @@ Alinea/
 │       ├── bookmarks/           # Bookmark repository & models
 │       ├── epub/                # Native Dart EPUB 2/3 parser service
 │       ├── glossary/            # Scoped & global terminology lock repository
-│       ├── highlights/          # Highlight annotations repository
+│       ├── highlights/          # Highlight annotations repository & in-text spans
 │       ├── library/             # Library view, search, category filter & import
-│       ├── reader/              # Responsive reading canvas, TOC & Mode C overlay
+│       ├── reader/              # Responsive reading canvas, TOC, notes export & Mode C overlay
 │       ├── settings/            # Gateway URL, theme, language & LRU cache management
-│       └── translation/         # Translation coordinator, cache & providers
-├── test/                        # ISTQB-compliant test suite
+│       └── translation/         # Translation coordinator, cache, history screen & providers
+├── test/                        # ISTQB-compliant test suite (48 tests, 100% pass)
 └── pubspec.yaml                 # Dependencies & project metadata
 ```
 
@@ -273,9 +311,13 @@ Alinea/
 
 ## 🗺️ Product Roadmap
 
-- [x] **v1.0 (MVP Core):** Native EPUB 2/3 parsing, Drift SQLite normalized engine, In-Place translation (Mode C), LibreTranslate FOSS integration, Scoped glossary, 4 reading themes, ISTQB verification.
+- [x] **v1.0 (MVP Core & Full Refinement):** Native EPUB 2/3 parsing, Drift SQLite normalized engine, In-Place translation (Mode C), LibreTranslate FOSS integration, Scoped glossary, 4 reading themes, ISTQB verification.
+- [x] **Visual In-Text Highlighting:** 4 comfortable semi-transparent colors (Yellow, Green, Blue, Pink) rendered directly in the reading flow.
+- [x] **Translation History & Vocab Notebook:** Searchable history screen with audio pronunciation, 1-tap copy, and direct glossary locking.
+- [x] **Text-to-Speech (TTS):** Native voice pronunciation for foreign words and translated sentences.
+- [x] **Markdown Study Export:** One-tap export of book metadata, notes, highlights, bookmarks, and terms into Obsidian/Notion markdown.
+- [x] **Precise Book Progress Metric:** Dynamic chapter + scroll completion percentage on library book cards.
 - [ ] **v1.1:** Custom translation prompt styles (*Natural*, *Literal*, *Academic*).
-- [ ] **v1.2:** Text-to-Speech (TTS) integration with local Indonesian voice engines.
 - [ ] **v2.0:** Multi-device synchronization using end-to-end encrypted protocol (utilizing existing RFC-4122 `uuid` fields).
 
 ---

@@ -1,11 +1,13 @@
 // ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/services/tts_service.dart';
 import '../../../core/storage/database.dart';
 import '../../glossary/presentation/glossary_screen.dart';
+import '../../translation/presentation/translation_history_screen.dart';
 import 'translation_overlay.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -35,6 +37,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   List<Bookmark> _bookmarks = [];
   List<Highlight> _highlights = [];
   int _drawerTabIndex = 0; // 0: TOC, 1: Bookmarks, 2: Highlights
+  bool _showTranslationTip = true;
+
+  // Inline Page Translation
+  bool _isPageTranslated = false;
+  bool _isTranslatingPage = false;
+  double _translationProgress = 0.0; // 0.0 to 1.0
+  String _translatedPageText = '';
+  bool _pageTranslationCancelled = false;
 
   @override
   void initState() {
@@ -93,6 +103,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
+    // Cancel any ongoing page translation
+    _pageTranslationCancelled = true;
+
     final currentChapter = _chapters[_currentChapterIndex];
     final bookRepo = ref.read(bookRepositoryProvider);
     final content = await bookRepo.getChapterContent(widget.bookId, currentChapter.id);
@@ -100,6 +113,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       setState(() {
         _currentChapterContent = content;
         _isLoading = false;
+        // Reset page translation state for new chapter
+        _isPageTranslated = false;
+        _isTranslatingPage = false;
+        _translatedPageText = '';
+        _translationProgress = 0.0;
+        _pageTranslationCancelled = false;
       });
     }
   }
@@ -158,20 +177,23 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       await tts.pause();
       setState(() => _isAudioPlaying = false);
     } else {
-      final cleanText = _cleanHtmlToReadableText(_currentChapterContent);
+      final cleanText = _isPageTranslated && _translatedPageText.isNotEmpty
+          ? _translatedPageText
+          : _cleanHtmlToReadableText(_currentChapterContent);
       if (cleanText.isEmpty || cleanText == 'Bab ini tidak memiliki konten teks.') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bab ini tidak memiliki teks untuk dibacakan.')),
         );
         return;
       }
+      final audioLang = _isPageTranslated ? 'id' : (_book?.sourceLanguage ?? 'en');
       setState(() {
         _isAudioBarVisible = true;
         _isAudioPlaying = true;
       });
       await tts.speak(
         cleanText,
-        language: _book?.sourceLanguage ?? 'en',
+        language: audioLang,
         rate: _speechRate,
       );
     }
@@ -204,9 +226,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     if (_isAudioPlaying) {
       final tts = ref.read(ttsServiceProvider);
+      final cleanText = _isPageTranslated && _translatedPageText.isNotEmpty
+          ? _translatedPageText
+          : _cleanHtmlToReadableText(_currentChapterContent);
+      final audioLang = _isPageTranslated ? 'id' : (_book?.sourceLanguage ?? 'en');
       tts.speak(
-        _cleanHtmlToReadableText(_currentChapterContent),
-        language: _book?.sourceLanguage ?? 'en',
+        cleanText,
+        language: audioLang,
         rate: _speechRate,
       );
     }
@@ -461,6 +487,107 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
+  void _handleTranslateChapter() {
+    final cleanText = _cleanHtmlToReadableText(_currentChapterContent);
+    if (cleanText.isEmpty) return;
+    final targetLang = ref.read(targetLanguageProvider);
+    final sourceLang = _book?.sourceLanguage ?? 'en';
+
+    TranslationOverlay.show(
+      context,
+      bookId: widget.bookId,
+      selectedText: cleanText.length > 600 ? cleanText.substring(0, 600) : cleanText,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang,
+    );
+  }
+
+  /// Translates the entire current chapter inline (paragraph by paragraph).
+  Future<void> _translatePageInline() async {
+    if (_isTranslatingPage) {
+      // Cancel ongoing translation and revert to original
+      setState(() {
+        _pageTranslationCancelled = true;
+        _isTranslatingPage = false;
+        _isPageTranslated = false;
+        _translationProgress = 0.0;
+        _translatedPageText = '';
+      });
+      return;
+    }
+
+    if (_isPageTranslated) {
+      // Toggle back to original text
+      setState(() {
+        _isPageTranslated = false;
+        _translatedPageText = '';
+      });
+      return;
+    }
+
+    // Start translating
+    final rawText = _cleanHtmlToReadableText(_currentChapterContent);
+    if (rawText.isEmpty || rawText == 'Bab ini tidak memiliki konten teks.') return;
+
+    final targetLang = ref.read(targetLanguageProvider);
+    final sourceLang = _book?.sourceLanguage ?? 'en';
+    final coordinator = ref.read(translationCoordinatorProvider);
+
+    // Split into paragraphs (non-empty)
+    final paragraphs = rawText
+        .split(RegExp(r'\n\n+'))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+
+    if (paragraphs.isEmpty) return;
+
+    setState(() {
+      _isTranslatingPage = true;
+      _isPageTranslated = false;
+      _pageTranslationCancelled = false;
+      _translationProgress = 0.0;
+      _translatedPageText = '';
+    });
+
+    final translatedParagraphs = <String>[];
+
+    for (int i = 0; i < paragraphs.length; i++) {
+      if (_pageTranslationCancelled || !mounted) break;
+
+      try {
+        final result = await coordinator.translateText(
+          bookId: widget.bookId,
+          text: paragraphs[i],
+          sourceLanguage: sourceLang,
+          targetLanguage: targetLang,
+        );
+        translatedParagraphs.add(result.translatedText);
+      } catch (_) {
+        // On error, keep original paragraph
+        translatedParagraphs.add(paragraphs[i]);
+      }
+
+      if (mounted && !_pageTranslationCancelled) {
+        setState(() {
+          _translationProgress = (i + 1) / paragraphs.length;
+          // Show progressively as each paragraph is done
+          _translatedPageText = translatedParagraphs.join('\n\n');
+          if (i > 0) _isPageTranslated = true; // Show partial result early
+        });
+      }
+    }
+
+    if (mounted && !_pageTranslationCancelled) {
+      setState(() {
+        _isTranslatingPage = false;
+        _isPageTranslated = true;
+        _translationProgress = 1.0;
+        _translatedPageText = translatedParagraphs.join('\n\n');
+      });
+    }
+  }
+
   void _showReadingSettings() {
     showModalBottomSheet(
       context: context,
@@ -546,11 +673,212 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
+  Widget _buildHighlightedContent(String text, TextStyle baseStyle) {
+    if (_chapters.isEmpty) return SelectableText(text, style: baseStyle);
+    final currentChapter = _chapters[_currentChapterIndex];
+    final chapterHighlights = _highlights.where((h) => h.chapterId == currentChapter.id).toList();
+
+    if (chapterHighlights.isEmpty) {
+      return SelectableText(text, style: baseStyle);
+    }
+
+    // Sort highlights by length descending to match longer phrases first
+    final sortedHls = List<Highlight>.from(chapterHighlights)
+      ..sort((a, b) => b.endAnchor.length.compareTo(a.endAnchor.length));
+
+    try {
+      final patterns = sortedHls.map((h) => RegExp.escape(h.endAnchor)).join('|');
+      final regExp = RegExp(patterns);
+      final matches = regExp.allMatches(text);
+
+      if (matches.isEmpty) {
+        return SelectableText(text, style: baseStyle);
+      }
+
+      final spans = <TextSpan>[];
+      int lastEnd = 0;
+
+      for (final match in matches) {
+        if (match.start > lastEnd) {
+          spans.add(TextSpan(text: text.substring(lastEnd, match.start), style: baseStyle));
+        }
+
+        final matchedText = text.substring(match.start, match.end);
+        final matchingHl = sortedHls.firstWhere(
+          (h) => h.endAnchor == matchedText,
+          orElse: () => sortedHls.first,
+        );
+
+        Color hlColor;
+        switch (matchingHl.color) {
+          case 'green':
+            hlColor = const Color(0xFFA5D6A7).withValues(alpha: 0.65);
+            break;
+          case 'blue':
+            hlColor = const Color(0xFF90CAF9).withValues(alpha: 0.65);
+            break;
+          case 'pink':
+            hlColor = const Color(0xFFF48FB1).withValues(alpha: 0.65);
+            break;
+          default:
+            hlColor = const Color(0xFFFFF59D).withValues(alpha: 0.85);
+        }
+
+        spans.add(TextSpan(
+          text: matchedText,
+          style: baseStyle.copyWith(backgroundColor: hlColor),
+        ));
+
+        lastEnd = match.end;
+      }
+
+      if (lastEnd < text.length) {
+        spans.add(TextSpan(text: text.substring(lastEnd), style: baseStyle));
+      }
+
+      return SelectableText.rich(
+        TextSpan(children: spans),
+      );
+    } catch (_) {
+      return SelectableText(text, style: baseStyle);
+    }
+  }
+
+  Future<void> _handleExportNotes() async {
+    final now = DateTime.now();
+    final glossaryRepo = ref.read(glossaryRepositoryProvider);
+    final terms = await glossaryRepo.getTerms(bookId: widget.bookId);
+
+    final sb = StringBuffer();
+    sb.writeln('# Alinea Reader — Catatan & Sorotan');
+    sb.writeln('**Buku:** ${_book?.title ?? ""}');
+    if (_book?.author != null) sb.writeln('**Penulis:** ${_book!.author}');
+    sb.writeln('**Tanggal Ekspor:** ${now.day}/${now.month}/${now.year}');
+    sb.writeln('\n---\n');
+
+    sb.writeln('## 🎨 Sorotan Teks & Catatan (${_highlights.length})');
+    if (_highlights.isEmpty) {
+      sb.writeln('_Tidak ada teks yang disorot._\n');
+    } else {
+      for (final hl in _highlights) {
+        final ch = _chapters.where((c) => c.id == hl.chapterId).firstOrNull;
+        final chTitle = ch?.title ?? 'Bab';
+        sb.writeln('> "${hl.endAnchor}"');
+        sb.writeln('- **Bab:** $chTitle | **Warna:** ${hl.color}');
+        if (hl.note != null && hl.note!.isNotEmpty) {
+          sb.writeln('- **Catatan:** ${hl.note}');
+        }
+        sb.writeln('');
+      }
+    }
+
+    sb.writeln('## 🔖 Penanda Halaman / Bookmarks (${_bookmarks.length})');
+    if (_bookmarks.isEmpty) {
+      sb.writeln('_Tidak ada penanda halaman._\n');
+    } else {
+      for (final bm in _bookmarks) {
+        final ch = _chapters.where((c) => c.id == bm.chapterId).firstOrNull;
+        sb.writeln('- ${bm.label ?? ch?.title ?? "Bab"} (${bm.createdAt.day}/${bm.createdAt.month}/${bm.createdAt.year})');
+      }
+      sb.writeln('');
+    }
+
+    sb.writeln('## 📖 Glosarium Istilah Buku Ini (${terms.length})');
+    if (terms.isEmpty) {
+      sb.writeln('_Belum ada istilah khusus._\n');
+    } else {
+      for (final t in terms) {
+        sb.writeln('- **${t.sourceTerm}** → ${t.preferredTranslation} (${t.sourceLanguage.toUpperCase()} → ${t.targetLanguage.toUpperCase()})');
+      }
+      sb.writeln('');
+    }
+
+    final exportText = sb.toString();
+
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.description_rounded, color: Colors.teal),
+                    SizedBox(width: 8),
+                    Text('Ekspor Catatan & Glosarium', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ],
+                ),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const Divider(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: SelectableText(
+                    exportText,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.copy_rounded),
+                label: const Text('Salin Semua Catatan (Markdown) ke Clipboard'),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: exportText));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Seluruh catatan dan glosarium berhasil disalin ke clipboard!'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Membuka buku & memuat bab...',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -570,17 +898,37 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           children: [
             Text(
               _book?.title ?? '',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             Text(
               currentChapter.title ?? 'Bab ${_currentChapterIndex + 1}',
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurface.withAlpha(160),
+              ),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
         actions: [
+          // Inline Page Translation Toggle (Terjemahkan Langsung Halaman Ini)
+          IconButton(
+            icon: _isTranslatingPage
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    _isPageTranslated ? Icons.translate_rounded : Icons.g_translate_rounded,
+                    color: _isPageTranslated ? Colors.green : null,
+                  ),
+            tooltip: _isPageTranslated ? 'Kembali ke Teks Asli' : 'Terjemahkan Langsung Halaman Ini',
+            onPressed: _translatePageInline,
+          ),
           // Chapter TTS Narration button
           IconButton(
             icon: Icon(
@@ -589,12 +937,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ),
             tooltip: _isAudioPlaying ? 'Hentikan Narasi Suara' : 'Dengarkan Bab Ini (TTS)',
             onPressed: _toggleAudioNarration,
-          ),
-          // View Bookmarks Sheet
-          IconButton(
-            icon: const Icon(Icons.collections_bookmark_outlined),
-            tooltip: 'Daftar Bookmark',
-            onPressed: _showBookmarksSheet,
           ),
           // Quick Add Bookmark
           IconButton(
@@ -608,47 +950,151 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             tooltip: 'Pengaturan Teks & Tema',
             onPressed: _showReadingSettings,
           ),
+          // Overflow Menu for Secondary Actions
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Opsi Tambahan',
+            onSelected: (val) {
+              switch (val) {
+                case 'translate_inline':
+                  _translatePageInline();
+                  break;
+                case 'translate':
+                  _handleTranslateChapter();
+                  break;
+                case 'bookmarks':
+                  _showBookmarksSheet();
+                  break;
+                case 'export':
+                  _handleExportNotes();
+                  break;
+              }
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'translate_inline',
+                child: Row(
+                  children: [
+                    Icon(
+                      _isPageTranslated ? Icons.undo_rounded : Icons.translate_rounded,
+                      size: 18,
+                      color: _isPageTranslated ? Colors.green : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(_isPageTranslated ? 'Tampilkan Teks Asli' : 'Terjemahkan Langsung Halaman'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'translate',
+                child: Row(
+                  children: [
+                    Icon(Icons.open_in_new_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Buka Panel Terjemahan'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'bookmarks',
+                child: Row(
+                  children: [
+                    Icon(Icons.collections_bookmark_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Daftar Penanda Halaman'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.share_outlined, size: 18),
+                    SizedBox(width: 10),
+                    Text('Ekspor Catatan & Glosarium'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       drawer: Drawer(
         child: Column(
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 16, 16, 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.asset('assets/images/logo.png', width: 28, height: 28, fit: BoxFit.cover),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(40),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset('assets/images/logo.png', width: 26, height: 26, fit: BoxFit.cover),
                       ),
-                      const SizedBox(width: 8),
-                      const Text('Navigasi Pembaca', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Navigasi Pembaca',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(_book?.title ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Text(
+                    _book?.title ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onPrimary.withAlpha(220),
+                    ),
+                  ),
                 ],
               ),
             ),
 
             // Tab navigation for Drawer
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: SegmentedButton<int>(
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: Theme.of(context).colorScheme.primary,
+                  selectedForegroundColor: Theme.of(context).colorScheme.onPrimary,
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  side: BorderSide(color: Theme.of(context).colorScheme.outline.withAlpha(120)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
                 segments: [
-                  const ButtonSegment(value: 0, label: Text('Daftar Isi', style: TextStyle(fontSize: 10))),
-                  ButtonSegment(value: 1, label: Text('Bookmark (${_bookmarks.length})', style: const TextStyle(fontSize: 10))),
-                  ButtonSegment(value: 2, label: Text('Sorotan (${_highlights.length})', style: const TextStyle(fontSize: 10))),
+                  const ButtonSegment(value: 0, label: Text('Daftar Isi', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600))),
+                  ButtonSegment(value: 1, label: Text('Bookmark (${_bookmarks.length})', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600))),
+                  ButtonSegment(value: 2, label: Text('Sorotan (${_highlights.length})', style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600))),
                 ],
                 selected: {_drawerTabIndex},
                 onSelectionChanged: (set) => setState(() => _drawerTabIndex = set.first),
               ),
             ),
-            const Divider(height: 8),
+            Divider(height: 8, color: Theme.of(context).colorScheme.outlineVariant.withAlpha(80)),
 
             // Drawer content based on selected tab
             Expanded(
@@ -656,27 +1102,61 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             ),
 
             // Drawer Footer: Glosarium Link
-            Container(
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey.shade300)),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.auto_stories_rounded, color: Colors.teal),
-                title: const Text('Glosarium Istilah Buku Ini', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                subtitle: const Text('Kunci terjemahan khusus buku ini', style: TextStyle(fontSize: 11)),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => GlossaryScreen(
-                        bookId: widget.bookId,
-                        bookTitle: _book?.title,
-                      ),
+            SafeArea(
+              top: false,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withAlpha(120))),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      dense: true,
+                      leading: Icon(Icons.history_edu_rounded, color: Theme.of(context).colorScheme.primary),
+                      title: const Text('Riwayat Terjemahan & Kosakata', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Catatan kata yang pernah diterjemahkan', style: TextStyle(fontSize: 10)),
+                      trailing: const Icon(Icons.chevron_right, size: 16),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const TranslationHistoryScreen()),
+                        );
+                      },
                     ),
-                  );
-                },
+                    ListTile(
+                      dense: true,
+                      leading: Icon(Icons.auto_stories_rounded, color: Theme.of(context).colorScheme.primary),
+                      title: const Text('Glosarium Istilah Buku Ini', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Kunci terjemahan khusus buku ini', style: TextStyle(fontSize: 10)),
+                      trailing: const Icon(Icons.chevron_right, size: 16),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GlossaryScreen(
+                              bookId: widget.bookId,
+                              bookTitle: _book?.title,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      dense: true,
+                      leading: Icon(Icons.share_outlined, color: Theme.of(context).colorScheme.primary),
+                      title: const Text('Ekspor Catatan & Glosarium', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      subtitle: const Text('Simpan ke format Markdown / Teks', style: TextStyle(fontSize: 10)),
+                      trailing: const Icon(Icons.chevron_right, size: 16),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _handleExportNotes();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -714,6 +1194,129 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_showTranslationTip)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withAlpha(18),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withAlpha(50),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.touch_app_rounded, size: 20, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '💡 Tahan & seleksi teks mana saja untuk menerjemahkan (Alinea) atau memberi sorotan warna.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(200),
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => setState(() => _showTranslationTip = false),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Icon(Icons.close, size: 16, color: Theme.of(context).colorScheme.onSurface.withAlpha(140)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  // Status Bar Penerjemahan Halaman
+                  if (_isTranslatingPage)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer.withAlpha(90),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.primary.withAlpha(60),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Menerjemahkan halaman... (${(_translationProgress * 100).toInt()}%)',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              InkWell(
+                                onTap: _translatePageInline,
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: _translationProgress > 0 ? _translationProgress : null,
+                              minHeight: 4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_isPageTranslated && !_isTranslatingPage)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 18, color: Colors.green.shade700),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Teks Diterjemahkan ke Bahasa Indonesia',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: const Icon(Icons.undo_rounded, size: 14),
+                            label: const Text('Teks Asli', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: _translatePageInline,
+                          ),
+                        ],
+                      ),
+                    ),
                   if (currentChapter.title != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20.0),
@@ -726,10 +1329,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         ),
                       ),
                     ),
-                  // Clean text content with paragraph styling
-                  Text(
-                    _cleanHtmlToReadableText(_currentChapterContent),
-                    style: TextStyle(
+                  // Clean text content with paragraph styling and visual in-text highlights
+                  _buildHighlightedContent(
+                    _isPageTranslated && _translatedPageText.isNotEmpty
+                        ? _translatedPageText
+                        : _cleanHtmlToReadableText(_currentChapterContent),
+                    TextStyle(
                       fontSize: _fontSize,
                       height: 1.65,
                       letterSpacing: 0.15,
@@ -848,29 +1453,44 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (_drawerTabIndex == 0) {
       // TOC (Daftar Isi)
       return ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 6),
         itemCount: _chapters.length,
         itemBuilder: (ctx, idx) {
           final ch = _chapters[idx];
           final isCurrent = idx == _currentChapterIndex;
           return ListTile(
             selected: isCurrent,
-            selectedTileColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(80),
+            selectedTileColor: Theme.of(context).colorScheme.primary.withAlpha(25),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             leading: CircleAvatar(
               radius: 14,
-              backgroundColor: isCurrent ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+              backgroundColor: isCurrent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline.withAlpha(50),
               child: Text(
                 '${idx + 1}',
                 style: TextStyle(
                   fontSize: 11,
-                  color: isCurrent ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  color: isCurrent ? Theme.of(context).colorScheme.onPrimary : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
             title: Text(
               ch.title ?? 'Bab ${idx + 1}',
-              style: TextStyle(fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal, fontSize: 13),
+              style: TextStyle(
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+                color: isCurrent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface,
+              ),
             ),
-            subtitle: ch.wordCount != null ? Text('${ch.wordCount} kata', style: const TextStyle(fontSize: 11)) : null,
+            subtitle: ch.wordCount != null
+                ? Text(
+                    '${ch.wordCount} kata',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(160),
+                    ),
+                  )
+                : null,
             onTap: () {
               Navigator.pop(context);
               _goToChapter(idx);

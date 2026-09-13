@@ -7,11 +7,13 @@ class TranslationCoordinator {
   final TranslationCacheRepository cacheRepo;
   final GlossaryRepository glossaryRepo;
   TranslationProvider activeProvider;
+  final TranslationProvider? fallbackProvider;
 
   TranslationCoordinator({
     required this.cacheRepo,
     required this.glossaryRepo,
     required this.activeProvider,
+    this.fallbackProvider,
   });
 
   void setProvider(TranslationProvider provider) {
@@ -87,7 +89,7 @@ class TranslationCoordinator {
       );
     }
 
-    // 3. Provider Inference (LibreTranslate default)
+    // 3. Provider Inference (activeProvider)
     try {
       final result = await activeProvider.translate(
         text: trimmed,
@@ -109,6 +111,32 @@ class TranslationCoordinator {
 
       return result;
     } catch (e) {
+      // Automatic Fallback to FOSS Cloud if active provider encounters error/unreachable
+      if (fallbackProvider != null && activeProvider.id != fallbackProvider!.id) {
+        try {
+          final fallbackResult = await fallbackProvider!.translate(
+            text: trimmed,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            style: style,
+          );
+
+          await cacheRepo.saveTranslation(
+            text: trimmed,
+            translatedText: fallbackResult.translatedText,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            provider: fallbackResult.providerId,
+            providerVersion: fallbackResult.providerVersion,
+            style: style,
+          );
+
+          return fallbackResult;
+        } catch (_) {
+          // If fallback also fails, continue to rethrow original error
+        }
+      }
+
       if (e is TranslationException) rethrow;
       throw TranslationException('Gagal menerjemahkan teks: $e');
     }

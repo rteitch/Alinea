@@ -7,6 +7,7 @@ import '../features/glossary/data/glossary_repository.dart';
 import '../features/highlights/data/highlight_repository.dart';
 import '../features/library/data/book_repository.dart';
 import '../features/translation/data/providers/byok_provider.dart';
+import '../features/translation/data/providers/foss_cloud_provider.dart';
 import '../features/translation/data/providers/libretranslate_provider.dart';
 import '../features/translation/data/translation_cache_repository.dart';
 import '../features/translation/domain/translation_coordinator.dart';
@@ -74,6 +75,10 @@ final appSettingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>
   return SettingsNotifier(repo);
 });
 
+final fossCloudProvider = Provider<TranslationProvider>((ref) {
+  return FossCloudProvider();
+});
+
 // Translation Engine Provider (dynamically synced with app settings)
 final activeTranslationProvider = Provider<TranslationProvider>((ref) {
   final settings = ref.watch(appSettingsProvider);
@@ -84,17 +89,22 @@ final activeTranslationProvider = Provider<TranslationProvider>((ref) {
       customEndpoint: settings.byokEndpoint,
     );
   }
-  return LibreTranslateProvider(baseUrl: settings.gatewayUrl);
+  if (settings.activeProviderId == 'libretranslate') {
+    return LibreTranslateProvider(baseUrl: settings.gatewayUrl);
+  }
+  return ref.watch(fossCloudProvider);
 });
 
 final translationCoordinatorProvider = Provider<TranslationCoordinator>((ref) {
   final cacheRepo = ref.watch(translationCacheRepositoryProvider);
   final glossaryRepo = ref.watch(glossaryRepositoryProvider);
   final provider = ref.watch(activeTranslationProvider);
+  final fallback = ref.watch(fossCloudProvider);
   return TranslationCoordinator(
     cacheRepo: cacheRepo,
     glossaryRepo: glossaryRepo,
     activeProvider: provider,
+    fallbackProvider: fallback,
   );
 });
 

@@ -3480,6 +3480,17 @@ class $TranslationCacheTable extends TranslationCache
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _sourceTextMeta = const VerificationMeta(
+    'sourceText',
+  );
+  @override
+  late final GeneratedColumn<String> sourceText = GeneratedColumn<String>(
+    'source_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sourceTextHashMeta = const VerificationMeta(
     'sourceTextHash',
   );
@@ -3573,6 +3584,7 @@ class $TranslationCacheTable extends TranslationCache
     id,
     sourceLanguage,
     targetLanguage,
+    sourceText,
     sourceTextHash,
     translatedText,
     provider,
@@ -3618,6 +3630,12 @@ class $TranslationCacheTable extends TranslationCache
       );
     } else if (isInserting) {
       context.missing(_targetLanguageMeta);
+    }
+    if (data.containsKey('source_text')) {
+      context.handle(
+        _sourceTextMeta,
+        sourceText.isAcceptableOrUnknown(data['source_text']!, _sourceTextMeta),
+      );
     }
     if (data.containsKey('source_text_hash')) {
       context.handle(
@@ -3723,6 +3741,10 @@ class $TranslationCacheTable extends TranslationCache
         DriftSqlType.string,
         data['${effectivePrefix}target_language'],
       )!,
+      sourceText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_text'],
+      ),
       sourceTextHash: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}source_text_hash'],
@@ -3769,6 +3791,7 @@ class TranslationCacheData extends DataClass
   final int id;
   final String sourceLanguage;
   final String targetLanguage;
+  final String? sourceText;
   final String sourceTextHash;
   final String translatedText;
   final String provider;
@@ -3781,6 +3804,7 @@ class TranslationCacheData extends DataClass
     required this.id,
     required this.sourceLanguage,
     required this.targetLanguage,
+    this.sourceText,
     required this.sourceTextHash,
     required this.translatedText,
     required this.provider,
@@ -3796,6 +3820,9 @@ class TranslationCacheData extends DataClass
     map['id'] = Variable<int>(id);
     map['source_language'] = Variable<String>(sourceLanguage);
     map['target_language'] = Variable<String>(targetLanguage);
+    if (!nullToAbsent || sourceText != null) {
+      map['source_text'] = Variable<String>(sourceText);
+    }
     map['source_text_hash'] = Variable<String>(sourceTextHash);
     map['translated_text'] = Variable<String>(translatedText);
     map['provider'] = Variable<String>(provider);
@@ -3812,6 +3839,9 @@ class TranslationCacheData extends DataClass
       id: Value(id),
       sourceLanguage: Value(sourceLanguage),
       targetLanguage: Value(targetLanguage),
+      sourceText: sourceText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceText),
       sourceTextHash: Value(sourceTextHash),
       translatedText: Value(translatedText),
       provider: Value(provider),
@@ -3832,6 +3862,7 @@ class TranslationCacheData extends DataClass
       id: serializer.fromJson<int>(json['id']),
       sourceLanguage: serializer.fromJson<String>(json['sourceLanguage']),
       targetLanguage: serializer.fromJson<String>(json['targetLanguage']),
+      sourceText: serializer.fromJson<String?>(json['sourceText']),
       sourceTextHash: serializer.fromJson<String>(json['sourceTextHash']),
       translatedText: serializer.fromJson<String>(json['translatedText']),
       provider: serializer.fromJson<String>(json['provider']),
@@ -3849,6 +3880,7 @@ class TranslationCacheData extends DataClass
       'id': serializer.toJson<int>(id),
       'sourceLanguage': serializer.toJson<String>(sourceLanguage),
       'targetLanguage': serializer.toJson<String>(targetLanguage),
+      'sourceText': serializer.toJson<String?>(sourceText),
       'sourceTextHash': serializer.toJson<String>(sourceTextHash),
       'translatedText': serializer.toJson<String>(translatedText),
       'provider': serializer.toJson<String>(provider),
@@ -3864,6 +3896,7 @@ class TranslationCacheData extends DataClass
     int? id,
     String? sourceLanguage,
     String? targetLanguage,
+    Value<String?> sourceText = const Value.absent(),
     String? sourceTextHash,
     String? translatedText,
     String? provider,
@@ -3876,6 +3909,7 @@ class TranslationCacheData extends DataClass
     id: id ?? this.id,
     sourceLanguage: sourceLanguage ?? this.sourceLanguage,
     targetLanguage: targetLanguage ?? this.targetLanguage,
+    sourceText: sourceText.present ? sourceText.value : this.sourceText,
     sourceTextHash: sourceTextHash ?? this.sourceTextHash,
     translatedText: translatedText ?? this.translatedText,
     provider: provider ?? this.provider,
@@ -3894,6 +3928,9 @@ class TranslationCacheData extends DataClass
       targetLanguage: data.targetLanguage.present
           ? data.targetLanguage.value
           : this.targetLanguage,
+      sourceText: data.sourceText.present
+          ? data.sourceText.value
+          : this.sourceText,
       sourceTextHash: data.sourceTextHash.present
           ? data.sourceTextHash.value
           : this.sourceTextHash,
@@ -3919,6 +3956,7 @@ class TranslationCacheData extends DataClass
           ..write('id: $id, ')
           ..write('sourceLanguage: $sourceLanguage, ')
           ..write('targetLanguage: $targetLanguage, ')
+          ..write('sourceText: $sourceText, ')
           ..write('sourceTextHash: $sourceTextHash, ')
           ..write('translatedText: $translatedText, ')
           ..write('provider: $provider, ')
@@ -3936,6 +3974,7 @@ class TranslationCacheData extends DataClass
     id,
     sourceLanguage,
     targetLanguage,
+    sourceText,
     sourceTextHash,
     translatedText,
     provider,
@@ -3952,6 +3991,7 @@ class TranslationCacheData extends DataClass
           other.id == this.id &&
           other.sourceLanguage == this.sourceLanguage &&
           other.targetLanguage == this.targetLanguage &&
+          other.sourceText == this.sourceText &&
           other.sourceTextHash == this.sourceTextHash &&
           other.translatedText == this.translatedText &&
           other.provider == this.provider &&
@@ -3966,6 +4006,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
   final Value<int> id;
   final Value<String> sourceLanguage;
   final Value<String> targetLanguage;
+  final Value<String?> sourceText;
   final Value<String> sourceTextHash;
   final Value<String> translatedText;
   final Value<String> provider;
@@ -3978,6 +4019,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
     this.id = const Value.absent(),
     this.sourceLanguage = const Value.absent(),
     this.targetLanguage = const Value.absent(),
+    this.sourceText = const Value.absent(),
     this.sourceTextHash = const Value.absent(),
     this.translatedText = const Value.absent(),
     this.provider = const Value.absent(),
@@ -3991,6 +4033,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
     this.id = const Value.absent(),
     required String sourceLanguage,
     required String targetLanguage,
+    this.sourceText = const Value.absent(),
     required String sourceTextHash,
     required String translatedText,
     required String provider,
@@ -4011,6 +4054,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
     Expression<int>? id,
     Expression<String>? sourceLanguage,
     Expression<String>? targetLanguage,
+    Expression<String>? sourceText,
     Expression<String>? sourceTextHash,
     Expression<String>? translatedText,
     Expression<String>? provider,
@@ -4024,6 +4068,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
       if (id != null) 'id': id,
       if (sourceLanguage != null) 'source_language': sourceLanguage,
       if (targetLanguage != null) 'target_language': targetLanguage,
+      if (sourceText != null) 'source_text': sourceText,
       if (sourceTextHash != null) 'source_text_hash': sourceTextHash,
       if (translatedText != null) 'translated_text': translatedText,
       if (provider != null) 'provider': provider,
@@ -4039,6 +4084,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
     Value<int>? id,
     Value<String>? sourceLanguage,
     Value<String>? targetLanguage,
+    Value<String?>? sourceText,
     Value<String>? sourceTextHash,
     Value<String>? translatedText,
     Value<String>? provider,
@@ -4052,6 +4098,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
       id: id ?? this.id,
       sourceLanguage: sourceLanguage ?? this.sourceLanguage,
       targetLanguage: targetLanguage ?? this.targetLanguage,
+      sourceText: sourceText ?? this.sourceText,
       sourceTextHash: sourceTextHash ?? this.sourceTextHash,
       translatedText: translatedText ?? this.translatedText,
       provider: provider ?? this.provider,
@@ -4074,6 +4121,9 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
     }
     if (targetLanguage.present) {
       map['target_language'] = Variable<String>(targetLanguage.value);
+    }
+    if (sourceText.present) {
+      map['source_text'] = Variable<String>(sourceText.value);
     }
     if (sourceTextHash.present) {
       map['source_text_hash'] = Variable<String>(sourceTextHash.value);
@@ -4108,6 +4158,7 @@ class TranslationCacheCompanion extends UpdateCompanion<TranslationCacheData> {
           ..write('id: $id, ')
           ..write('sourceLanguage: $sourceLanguage, ')
           ..write('targetLanguage: $targetLanguage, ')
+          ..write('sourceText: $sourceText, ')
           ..write('sourceTextHash: $sourceTextHash, ')
           ..write('translatedText: $translatedText, ')
           ..write('provider: $provider, ')
@@ -8376,6 +8427,7 @@ typedef $$TranslationCacheTableCreateCompanionBuilder =
       Value<int> id,
       required String sourceLanguage,
       required String targetLanguage,
+      Value<String?> sourceText,
       required String sourceTextHash,
       required String translatedText,
       required String provider,
@@ -8390,6 +8442,7 @@ typedef $$TranslationCacheTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> sourceLanguage,
       Value<String> targetLanguage,
+      Value<String?> sourceText,
       Value<String> sourceTextHash,
       Value<String> translatedText,
       Value<String> provider,
@@ -8421,6 +8474,11 @@ class $$TranslationCacheTableFilterComposer
 
   ColumnFilters<String> get targetLanguage => $composableBuilder(
     column: $table.targetLanguage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceText => $composableBuilder(
+    column: $table.sourceText,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8489,6 +8547,11 @@ class $$TranslationCacheTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sourceText => $composableBuilder(
+    column: $table.sourceText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get sourceTextHash => $composableBuilder(
     column: $table.sourceTextHash,
     builder: (column) => ColumnOrderings(column),
@@ -8549,6 +8612,11 @@ class $$TranslationCacheTableAnnotationComposer
 
   GeneratedColumn<String> get targetLanguage => $composableBuilder(
     column: $table.targetLanguage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceText => $composableBuilder(
+    column: $table.sourceText,
     builder: (column) => column,
   );
 
@@ -8625,6 +8693,7 @@ class $$TranslationCacheTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> sourceLanguage = const Value.absent(),
                 Value<String> targetLanguage = const Value.absent(),
+                Value<String?> sourceText = const Value.absent(),
                 Value<String> sourceTextHash = const Value.absent(),
                 Value<String> translatedText = const Value.absent(),
                 Value<String> provider = const Value.absent(),
@@ -8637,6 +8706,7 @@ class $$TranslationCacheTableTableManager
                 id: id,
                 sourceLanguage: sourceLanguage,
                 targetLanguage: targetLanguage,
+                sourceText: sourceText,
                 sourceTextHash: sourceTextHash,
                 translatedText: translatedText,
                 provider: provider,
@@ -8651,6 +8721,7 @@ class $$TranslationCacheTableTableManager
                 Value<int> id = const Value.absent(),
                 required String sourceLanguage,
                 required String targetLanguage,
+                Value<String?> sourceText = const Value.absent(),
                 required String sourceTextHash,
                 required String translatedText,
                 required String provider,
@@ -8663,6 +8734,7 @@ class $$TranslationCacheTableTableManager
                 id: id,
                 sourceLanguage: sourceLanguage,
                 targetLanguage: targetLanguage,
+                sourceText: sourceText,
                 sourceTextHash: sourceTextHash,
                 translatedText: translatedText,
                 provider: provider,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../glossary/presentation/glossary_screen.dart';
+import '../../translation/presentation/translation_history_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -146,10 +147,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           // FOSS Commitment Card
           Card(
             elevation: 0,
-            color: Colors.green.shade50,
+            color: theme.brightness == Brightness.dark
+                ? const Color(0xFF132A1C)
+                : Colors.green.shade50,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.green.shade200),
+              side: BorderSide(
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFF22543D)
+                    : Colors.green.shade200,
+              ),
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -159,10 +166,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: theme.brightness == Brightness.dark
+                          ? const Color(0xFF1E4620)
+                          : Colors.green.shade100,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.verified_user_rounded, color: Colors.green.shade800, size: 24),
+                    child: Icon(
+                      Icons.verified_user_rounded,
+                      color: theme.brightness == Brightness.dark
+                          ? const Color(0xFF68D391)
+                          : Colors.green.shade800,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -174,13 +189,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
-                            color: Colors.green.shade900,
+                            color: theme.brightness == Brightness.dark
+                                ? const Color(0xFF9AE6B4)
+                                : Colors.green.shade900,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Alinea berprinsip \$0 biaya marginal. Mesin translasi default ditenagai oleh LibreTranslate & model Argos Translate (MIT).',
-                          style: TextStyle(fontSize: 12.5, color: Colors.green.shade800, height: 1.3),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: theme.brightness == Brightness.dark
+                                ? const Color(0xFFC6F6D5)
+                                : Colors.green.shade800,
+                            height: 1.3,
+                          ),
                         ),
                       ],
                     ),
@@ -336,7 +359,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Option 1: LibreTranslate
+                  // Option 1: Alinea FOSS Cloud
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _selectedProvider == 'foss_cloud'
+                            ? theme.colorScheme.primary
+                            : Colors.grey.shade300,
+                        width: _selectedProvider == 'foss_cloud' ? 1.5 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: RadioListTile<String>(
+                      value: 'foss_cloud',
+                      groupValue: _selectedProvider,
+                      title: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Alinea FOSS Cloud',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.green.withAlpha(120)),
+                            ),
+                            child: const Text(
+                              'SIAP PAKAI (\$0)',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: const Text('Bebas biaya tanpa batas. Siap dipakai langsung di ponsel via Wi-Fi & data seluler.'),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedProvider = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Option 2: LibreTranslate Self-Hosted
                   Container(
                     decoration: BoxDecoration(
                       border: Border.all(
@@ -350,18 +423,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: RadioListTile<String>(
                       value: 'libretranslate',
                       groupValue: _selectedProvider,
-                      title: const Row(
+                      title: Row(
                         children: [
-                          Text('LibreTranslate Self-Hosted', style: TextStyle(fontWeight: FontWeight.w600)),
-                          SizedBox(width: 8),
-                          Chip(
-                            label: Text('DEFAULT FOSS', style: TextStyle(fontSize: 10, color: Colors.green)),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
+                          const Expanded(
+                            child: Text(
+                              'LibreTranslate Self-Hosted',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.blue.withAlpha(120)),
+                            ),
+                            child: const Text(
+                              'LOKAL PC / DOCKER',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      subtitle: const Text('Model Argos Translate open-source tanpa biaya API per-karakter.'),
+                      subtitle: const Text('Model Argos Translate mandiri. Memerlukan gateway aktif di komputer Anda.'),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedProvider = val);
                       },
@@ -369,7 +459,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Option 2: BYOK
+                  // Option 3: BYOK
                   Container(
                     decoration: BoxDecoration(
                       border: Border.all(
@@ -568,6 +658,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     },
                     icon: const Icon(Icons.auto_stories_rounded, size: 18),
                     label: const Text('Buka Pengelola Glosarium'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // SECTION: Riwayat Terjemahan & Kosakata
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.history_edu_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Riwayat Terjemahan & Kosakata',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tinjau kembali kata dan kalimat yang pernah Anda terjemahkan saat membaca buku sebagai catatan belajar bahasa.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.tonalIcon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TranslationHistoryScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.menu_book_rounded, size: 18),
+                    label: const Text('Buka Riwayat Terjemahan'),
                   ),
                 ],
               ),

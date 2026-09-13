@@ -14,7 +14,7 @@ class AppSettings {
 
   const AppSettings({
     this.gatewayUrl = 'http://10.0.2.2:8000/v1',
-    this.activeProviderId = 'libretranslate',
+    this.activeProviderId = 'foss_cloud',
     this.byokKey = '',
     this.byokEndpoint = 'https://api-free.deepl.com/v2/translate',
     this.targetLanguage = 'id',
@@ -35,7 +35,7 @@ class AppSettings {
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
       gatewayUrl: json['gatewayUrl'] as String? ?? 'http://10.0.2.2:8000/v1',
-      activeProviderId: json['activeProviderId'] as String? ?? 'libretranslate',
+      activeProviderId: json['activeProviderId'] as String? ?? 'foss_cloud',
       byokKey: json['byokKey'] as String? ?? '',
       byokEndpoint: json['byokEndpoint'] as String? ?? 'https://api-free.deepl.com/v2/translate',
       targetLanguage: json['targetLanguage'] as String? ?? 'id',

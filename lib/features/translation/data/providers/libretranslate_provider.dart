@@ -116,17 +116,42 @@ class LibreTranslateProvider implements TranslationProvider {
         );
       } else {
         final code = e.response?.statusCode;
-        final msg = e.response?.data?['error'] ?? e.message ?? 'Kesalahan jaringan saat translasi';
+        final msg = _extractErrorMessage(e);
         throw TranslationException(
-          'Gagal menerjemahkan teks: $msg',
+          msg,
           statusCode: code,
           isRetryable: code == 429 || (code != null && code >= 500),
         );
       }
     } catch (e) {
       if (e is TranslationException) rethrow;
-      throw TranslationException('Terjadi kesalahan tak terduga saat translasi: $e');
+      throw TranslationException('Terjadi kesalahan saat translasi: $e');
     }
+  }
+
+  String _extractErrorMessage(DioException e) {
+    final code = e.response?.statusCode;
+    final data = e.response?.data;
+
+    if (data is Map && data.containsKey('error') && data['error'] != null) {
+      return data['error'].toString();
+    }
+    if (data is String && data.isNotEmpty && !data.contains('<!DOCTYPE') && !data.contains('<html')) {
+      return data;
+    }
+    if (code == 400) {
+      return 'Server LibreTranslate menolak permintaan (400 Bad Request). Server mungkin memerlukan API Key atau format parameter berbeda.';
+    }
+    if (code == 401 || code == 403) {
+      return 'Akses server ditolak ($code). Server LibreTranslate memerlukan API Key.';
+    }
+    if (code == 429) {
+      return 'Batas frekuensi permintaan tercapai (429 Too Many Requests). Silakan coba sebentar lagi.';
+    }
+    if (code != null && code >= 500) {
+      return 'Server translasi mengalami gangguan internal ($code).';
+    }
+    return 'Gagal terhubung ke server translasi ($code)';
   }
 
   @override

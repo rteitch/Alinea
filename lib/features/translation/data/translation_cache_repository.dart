@@ -61,6 +61,7 @@ class TranslationCacheRepository {
     final companion = TranslationCacheCompanion.insert(
       sourceLanguage: sourceLanguage,
       targetLanguage: targetLanguage,
+      sourceText: Value(text),
       sourceTextHash: sourceHash,
       translatedText: translatedText,
       provider: provider,
@@ -92,5 +93,23 @@ class TranslationCacheRepository {
       return await (db.delete(db.translationCache)..where((tbl) => tbl.id.isIn(idsToDelete))).go();
     }
     return 0;
+  }
+
+  Future<List<TranslationCacheData>> getHistory({String? query}) async {
+    final selectQuery = db.select(db.translationCache);
+    if (query != null && query.trim().isNotEmpty) {
+      final q = query.trim().toLowerCase();
+      selectQuery.where((tbl) =>
+          tbl.translatedText.like('%$q%') |
+          tbl.sourceText.like('%$q%') |
+          tbl.sourceLanguage.equals(q) |
+          tbl.targetLanguage.equals(q));
+    }
+    selectQuery.orderBy([(t) => OrderingTerm.desc(t.lastUsedAt)]);
+    return await selectQuery.get();
+  }
+
+  Future<int> deleteEntry(int id) async {
+    return await (db.delete(db.translationCache)..where((tbl) => tbl.id.equals(id))).go();
   }
 }

@@ -241,4 +241,16 @@ class BookRepository {
     );
     return newFav;
   }
+
+  /// Calculates overall reading progress percentage [0.0 - 1.0]
+  Future<double> getOverallProgressPct(int bookId) async {
+    final progress = await getReadingProgress(bookId);
+    if (progress == null) return 0.0;
+    final chapters = await getChaptersByBookId(bookId);
+    if (chapters.isEmpty) return 0.0;
+    final chapterIdx = chapters.indexWhere((c) => c.id == progress.chapterId);
+    if (chapterIdx < 0) return 0.0;
+    final totalChapters = chapters.length;
+    return ((chapterIdx + progress.scrollPct) / totalChapters).clamp(0.0, 1.0);
+  }
 }
