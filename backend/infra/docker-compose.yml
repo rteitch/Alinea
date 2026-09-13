@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: alinea-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - LIBRETRANSLATE_URL=http://libretranslate:5000
+      - REDIS_URL=redis://redis:6379/0
+      - CACHE_EXPIRY_SECONDS=604800 # 7 days cache retention
+    depends_on:
+      redis:
+        condition: service_healthy
+      libretranslate:
+        condition: service_started
+    restart: unless-stopped
+
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    container_name: alinea-libretranslate
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persistent cache for downloaded Argos Translate language models (~2GB)
+      - lt_models:/home/libretranslate/.local
+    environment:
+      - LT_LOAD_ONLY=en,id,ja,zh,ko,ar,de,fr,es
+      - LT_DISABLE_WEB_UI=true
+      - LT_UPDATE_MODELS=true
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: alinea-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 300 1
+      --loglevel notice
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  lt_models:
+    name: alinea_lt_models
+  redis_data:
+    name: alinea_redis_data
