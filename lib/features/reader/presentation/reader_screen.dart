@@ -552,28 +552,33 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     final translatedParagraphs = <String>[];
 
-    for (int i = 0; i < paragraphs.length; i++) {
+    const batchSize = 3;
+    for (int i = 0; i < paragraphs.length; i += batchSize) {
       if (_pageTranslationCancelled || !mounted) break;
 
-      try {
-        final result = await coordinator.translateText(
-          bookId: widget.bookId,
-          text: paragraphs[i],
-          sourceLanguage: sourceLang,
-          targetLanguage: targetLang,
-        );
-        translatedParagraphs.add(result.translatedText);
-      } catch (_) {
-        // On error, keep original paragraph
-        translatedParagraphs.add(paragraphs[i]);
-      }
+      final batch = paragraphs.skip(i).take(batchSize).toList();
+      final batchFutures = batch.map((p) async {
+        try {
+          final result = await coordinator.translateText(
+            bookId: widget.bookId,
+            text: p,
+            sourceLanguage: sourceLang,
+            targetLanguage: targetLang,
+          );
+          return result.translatedText;
+        } catch (_) {
+          return p;
+        }
+      }).toList();
+
+      final batchResults = await Future.wait(batchFutures);
+      translatedParagraphs.addAll(batchResults);
 
       if (mounted && !_pageTranslationCancelled) {
         setState(() {
-          _translationProgress = (i + 1) / paragraphs.length;
-          // Show progressively as each paragraph is done
+          _translationProgress = translatedParagraphs.length / paragraphs.length;
           _translatedPageText = translatedParagraphs.join('\n\n');
-          if (i > 0) _isPageTranslated = true; // Show partial result early
+          _isPageTranslated = true;
         });
       }
     }

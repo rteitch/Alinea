@@ -54,6 +54,34 @@ class ProviderInfo(BaseModel):
     license: str
     description: str
 
+ISO_639_2_MAP = {
+    "eng": "en",
+    "ind": "id",
+    "fra": "fr",
+    "fre": "fr",
+    "deu": "de",
+    "ger": "de",
+    "spa": "es",
+    "zho": "zh",
+    "chi": "zh",
+    "jpn": "ja",
+    "ara": "ar",
+    "rus": "ru",
+    "ita": "it",
+    "por": "pt",
+    "kor": "ko",
+}
+
+def normalize_language_code(code: str) -> str:
+    if not code:
+        return "en"
+    clean = code.strip().lower()
+    if clean in ISO_639_2_MAP:
+        return ISO_639_2_MAP[clean]
+    # Strip subtag like en-US, en_US, en-GB -> en
+    clean = clean.replace("_", "-").split("-")[0]
+    return ISO_639_2_MAP.get(clean, clean)
+
 def compute_cache_key(text: str, source: str, target: str, style: str) -> str:
     normalized = " ".join(text.strip().split())
     raw = f"{source}:{target}:{normalized}:{style}"
@@ -91,23 +119,26 @@ async def list_providers():
 @app.post("/v1/translate", response_model=TranslateResponse)
 async def translate(req: TranslateRequest):
     trimmed = req.q.strip()
+    norm_source = normalize_language_code(req.source)
+    norm_target = normalize_language_code(req.target)
+
     if not trimmed:
         return TranslateResponse(
             translatedText=req.q,
-            sourceLanguage=req.source,
-            targetLanguage=req.target,
+            sourceLanguage=norm_source,
+            targetLanguage=norm_target,
             isFromCache=False,
         )
 
-    cache_key = compute_cache_key(trimmed, req.source, req.target, req.style or "natural")
+    cache_key = compute_cache_key(trimmed, norm_source, norm_target, req.style or "natural")
 
     # 1. Check Gateway Cache
     if cache_key in memory_cache:
         cached_val = memory_cache[cache_key]
         return TranslateResponse(
             translatedText=cached_val,
-            sourceLanguage=req.source,
-            targetLanguage=req.target,
+            sourceLanguage=norm_source,
+            targetLanguage=norm_target,
             isFromCache=True,
         )
 
@@ -116,8 +147,8 @@ async def translate(req: TranslateRequest):
         async with httpx.AsyncClient(timeout=10.0) as client:
             payload = {
                 "q": trimmed,
-                "source": req.source,
-                "target": req.target,
+                "source": norm_source,
+                "target": norm_target,
                 "format": req.format or "text",
             }
             if req.api_key:

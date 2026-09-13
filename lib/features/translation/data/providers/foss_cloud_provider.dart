@@ -55,15 +55,18 @@ class FossCloudProvider implements TranslationProvider {
       );
     }
 
+    final normSource = _normalizeLang(sourceLanguage);
+    final normTarget = _normalizeLang(targetLanguage);
+
     try {
       // If text is short, translate in a single call
       if (trimmed.length <= 450) {
-        final translated = await _fetchChunk(trimmed, sourceLanguage, targetLanguage);
+        final translated = await _fetchChunk(trimmed, normSource, normTarget);
         return TranslationResult(
           originalText: text,
           translatedText: translated,
-          sourceLanguage: sourceLanguage,
-          targetLanguage: targetLanguage,
+          sourceLanguage: normSource,
+          targetLanguage: normTarget,
           providerId: id,
           providerVersion: versionTag,
           isFromCache: false,
@@ -71,21 +74,20 @@ class FossCloudProvider implements TranslationProvider {
         );
       }
 
-      // If text is long, split by sentences to respect 500-char API limit
+      // If text is long, split by sentences to respect 500-char API limit and translate concurrently
       final sentences = _splitSentences(trimmed);
-      final results = <String>[];
-      for (final s in sentences) {
-        if (s.trim().isEmpty) continue;
-        final res = await _fetchChunk(s.trim(), sourceLanguage, targetLanguage);
-        results.add(res);
-      }
+      final results = await Future.wait(
+        sentences.where((s) => s.trim().isNotEmpty).map(
+          (s) => _fetchChunk(s.trim(), normSource, normTarget),
+        ),
+      );
 
       final combined = results.join(' ');
       return TranslationResult(
         originalText: text,
         translatedText: combined,
-        sourceLanguage: sourceLanguage,
-        targetLanguage: targetLanguage,
+        sourceLanguage: normSource,
+        targetLanguage: normTarget,
         providerId: id,
         providerVersion: versionTag,
         isFromCache: false,
@@ -176,6 +178,27 @@ class FossCloudProvider implements TranslationProvider {
         .replaceAll('&lt;', '<')
         .replaceAll('&gt;', '>')
         .replaceAll('&nbsp;', ' ');
+  }
+
+  String _normalizeLang(String lang) {
+    final clean = lang.trim().toLowerCase();
+    const iso3To2 = {
+      'eng': 'en',
+      'ind': 'id',
+      'fra': 'fr',
+      'fre': 'fr',
+      'deu': 'de',
+      'ger': 'de',
+      'spa': 'es',
+      'zho': 'zh',
+      'chi': 'zh',
+      'jpn': 'ja',
+      'ara': 'ar',
+      'kor': 'ko',
+    };
+    if (iso3To2.containsKey(clean)) return iso3To2[clean]!;
+    final base = clean.replaceAll('_', '-').split('-').first;
+    return iso3To2[base] ?? base;
   }
 
   @override

@@ -29,6 +29,27 @@ class LibreTranslateProvider implements TranslationProvider {
     return url;
   }
 
+  String _normalizeLang(String lang) {
+    final clean = lang.trim().toLowerCase();
+    const iso3To2 = {
+      'eng': 'en',
+      'ind': 'id',
+      'fra': 'fr',
+      'fre': 'fr',
+      'deu': 'de',
+      'ger': 'de',
+      'spa': 'es',
+      'zho': 'zh',
+      'chi': 'zh',
+      'jpn': 'ja',
+      'ara': 'ar',
+      'kor': 'ko',
+    };
+    if (iso3To2.containsKey(clean)) return iso3To2[clean]!;
+    final base = clean.replaceAll('_', '-').split('-').first;
+    return iso3To2[base] ?? base;
+  }
+
   @override
   String get id => 'libretranslate';
 
@@ -64,13 +85,16 @@ class LibreTranslateProvider implements TranslationProvider {
       );
     }
 
+    final normSource = _normalizeLang(sourceLanguage);
+    final normTarget = _normalizeLang(targetLanguage);
+
     try {
       final response = await dio.post(
         '$effectiveBaseUrl/translate',
         data: {
           'q': trimmed,
-          'source': sourceLanguage,
-          'target': targetLanguage,
+          'source': normSource,
+          'target': normTarget,
           'format': 'text',
           'style': style,
           if (apiKey != null && apiKey!.isNotEmpty) 'api_key': apiKey,
