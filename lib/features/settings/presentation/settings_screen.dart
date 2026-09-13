@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
+import '../../../app/theme/app_theme.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -453,7 +454,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // SECTION 4: Cache Management
+          // SECTION 4: Theme & Eye Comfort
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.palette_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Tema Tampilan & Kenyamanan Mata',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pilih tema yang paling nyaman dan ramah di mata untuk sesi membaca panjang.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentTheme = ref.watch(readingThemeModeProvider);
+                      return Row(
+                        children: [
+                          _buildThemeOption(
+                            label: 'Light',
+                            sub: 'Siang Hari',
+                            bg: const Color(0xFFF9F9FB),
+                            textColor: const Color(0xFF1E293B),
+                            borderColor: Colors.grey.shade400,
+                            mode: ReadingThemeMode.light,
+                            current: currentTheme,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildThemeOption(
+                            label: 'Sepia',
+                            sub: 'Anti-Lelah',
+                            bg: const Color(0xFFF7F1E3),
+                            textColor: const Color(0xFF4A3B32),
+                            borderColor: const Color(0xFFD4C7AB),
+                            mode: ReadingThemeMode.sepia,
+                            current: currentTheme,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildThemeOption(
+                            label: 'Dark',
+                            sub: 'Malam',
+                            bg: const Color(0xFF121820),
+                            textColor: const Color(0xFFE2E8F0),
+                            borderColor: const Color(0xFF2C3E50),
+                            mode: ReadingThemeMode.dark,
+                            current: currentTheme,
+                          ),
+                          const SizedBox(width: 8),
+                          _buildThemeOption(
+                            label: 'AMOLED',
+                            sub: 'Hemat Baterai',
+                            bg: Colors.black,
+                            textColor: const Color(0xFFE0E0E0),
+                            borderColor: const Color(0xFF333333),
+                            mode: ReadingThemeMode.amoled,
+                            current: currentTheme,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Card(
             elevation: 1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -540,4 +619,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
+  Widget _buildThemeOption({
+    required String label,
+    required String sub,
+    required Color bg,
+    required Color textColor,
+    required Color borderColor,
+    required ReadingThemeMode mode,
+    required ReadingThemeMode current,
+  }) {
+    final isSelected = mode == current;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          ref.read(readingThemeModeProvider.notifier).state = mode;
+          ref.read(appSettingsProvider.notifier).save(
+                ref.read(appSettingsProvider).copyWith(readingTheme: mode.name),
+              );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Theme.of(context).colorScheme.primary : borderColor,
+              width: isSelected ? 2.2 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isSelected)
+                Icon(Icons.check_circle_rounded, size: 16, color: Theme.of(context).colorScheme.primary)
+              else
+                const SizedBox(height: 16),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                sub,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: textColor.withValues(alpha: 0.75),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
