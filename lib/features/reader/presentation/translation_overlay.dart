@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class TranslationOverlay extends ConsumerStatefulWidget {
   final int bookId;
@@ -325,10 +326,26 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                                 style: TextStyle(color: Colors.red.shade700, fontSize: 13),
                               ),
                               const SizedBox(height: 6),
-                              TextButton.icon(
-                                onPressed: _performTranslation,
-                                icon: const Icon(Icons.refresh, size: 16),
-                                label: const Text('Coba Lagi'),
+                              Row(
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: _performTranslation,
+                                    icon: const Icon(Icons.refresh, size: 16),
+                                    label: const Text('Coba Lagi'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.settings_outlined, size: 16),
+                                    label: const Text('Atur Gateway'),
+                                  ),
+                                ],
                               ),
                             ],
                           )

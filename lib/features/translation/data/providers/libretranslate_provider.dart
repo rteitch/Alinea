@@ -20,6 +20,15 @@ class LibreTranslateProvider implements TranslationProvider {
               ),
             );
 
+  String get effectiveBaseUrl {
+    var url = baseUrl.trim();
+    if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    if (url.endsWith('/translate')) url = url.substring(0, url.length - '/translate'.length);
+    if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    if (!url.endsWith('/v1')) url = '$url/v1';
+    return url;
+  }
+
   @override
   String get id => 'libretranslate';
 
@@ -57,7 +66,7 @@ class LibreTranslateProvider implements TranslationProvider {
 
     try {
       final response = await dio.post(
-        '$baseUrl/translate',
+        '$effectiveBaseUrl/translate',
         data: {
           'q': trimmed,
           'source': sourceLanguage,

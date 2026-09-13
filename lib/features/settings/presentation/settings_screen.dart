@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
-import '../../translation/data/providers/libretranslate_provider.dart';
-import '../../translation/data/providers/byok_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -13,9 +11,30 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final TextEditingController _serverController = TextEditingController(text: 'http://localhost:8000/v1');
-  final TextEditingController _byokKeyController = TextEditingController();
-  final TextEditingController _byokEndpointController = TextEditingController(text: 'https://api-free.deepl.com/v2/translate');
+  late TextEditingController _serverController;
+  late TextEditingController _byokKeyController;
+  late TextEditingController _byokEndpointController;
+
+  String _selectedProvider = 'libretranslate';
+  String _selectedTargetLang = 'id';
+  bool _isSaving = false;
+  bool _isTesting = false;
+  ({bool success, String message, int? latencyMs})? _testResult;
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      final settings = ref.read(appSettingsProvider);
+      _selectedProvider = settings.activeProviderId;
+      _selectedTargetLang = settings.targetLanguage;
+      _serverController = TextEditingController(text: settings.gatewayUrl);
+      _byokKeyController = TextEditingController(text: settings.byokKey);
+      _byokEndpointController = TextEditingController(text: settings.byokEndpoint);
+      _initialized = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -25,179 +44,498 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
+  Future<void> _handleTestConnection() async {
+    setState(() {
+      _isTesting = true;
+      _testResult = null;
+    });
+
+    final repo = ref.read(settingsRepositoryProvider);
+    final result = await repo.testConnection(_serverController.text);
+
+    if (mounted) {
+      setState(() {
+        _isTesting = false;
+        _testResult = result;
+      });
+    }
+  }
+
+  Future<void> _handleSave() async {
+    setState(() => _isSaving = true);
+
+    final newSettings = ref.read(appSettingsProvider).copyWith(
+          gatewayUrl: _serverController.text.trim(),
+          activeProviderId: _selectedProvider,
+          byokKey: _byokKeyController.text.trim(),
+          byokEndpoint: _byokEndpointController.text.trim(),
+          targetLanguage: _selectedTargetLang,
+        );
+
+    await ref.read(appSettingsProvider.notifier).save(newSettings);
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white),
+              SizedBox(width: 10),
+              Expanded(child: Text('Pengaturan berhasil disimpan!')),
+            ],
+          ),
+          backgroundColor: Colors.teal.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final activeProvider = ref.watch(activeTranslationProvider);
-    final targetLang = ref.watch(targetLanguageProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengaturan & Transparansi'),
+        title: const Text('Pengaturan & Integrasi'),
+        elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Simpan',
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.save_rounded),
+            onPressed: _isSaving ? null : _handleSave,
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: ElevatedButton.icon(
+            onPressed: _isSaving ? null : _handleSave,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.save_rounded),
+            label: Text(_isSaving ? 'Menyimpan...' : 'Simpan Perubahan'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          // FOSS Commitment Banner
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade300),
+          // FOSS Commitment Card
+          Card(
+            elevation: 0,
+            color: Colors.green.shade50,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.green.shade200),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.lock_open_rounded, color: Colors.green.shade800, size: 28),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '100% Gratis & 100% FOSS',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.green.shade900,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.verified_user_rounded, color: Colors.green.shade800, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '100% Gratis & 100% FOSS',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.green.shade900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Alinea berprinsip \$0 biaya marginal. Mesin translasi default ditenagai oleh LibreTranslate & model Argos Translate (MIT).',
+                          style: TextStyle(fontSize: 12.5, color: Colors.green.shade800, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SECTION 1: Gateway & Connection
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.router_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
                       Text(
-                        'Alinea dibangun di atas mesin Argos Translate (MIT) & LibreTranslate (AGPL-3.0). Tanpa biaya per karakter (Rp 0 marginal cost), tanpa pelacakan data, dan 100% dapat diaudit sumbernya.',
-                        style: TextStyle(fontSize: 12, color: Colors.green.shade900, height: 1.4),
+                        'Alamat Translation Gateway',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    'Masukkan URL server gateway PC Anda jika menggunakan koneksi Wi-Fi yang sama.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // URL TextField
+                  TextField(
+                    controller: _serverController,
+                    decoration: InputDecoration(
+                      labelText: 'Gateway Base URL',
+                      hintText: 'http://192.168.1.x:8000/v1',
+                      prefixIcon: const Icon(Icons.link_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Quick Helper Chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      ActionChip(
+                        avatar: const Icon(Icons.phone_android_rounded, size: 14),
+                        label: const Text('Emulator (10.0.2.2)', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          _serverController.text = 'http://10.0.2.2:8000/v1';
+                        },
+                      ),
+                      ActionChip(
+                        avatar: const Icon(Icons.computer_rounded, size: 14),
+                        label: const Text('Localhost (8000)', style: TextStyle(fontSize: 11)),
+                        onPressed: () {
+                          _serverController.text = 'http://localhost:8000/v1';
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Test Connection Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isTesting ? null : _handleTestConnection,
+                      icon: _isTesting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.wifi_tethering_rounded, size: 18),
+                      label: Text(_isTesting ? 'Menguji koneksi...' : 'Uji Koneksi Gateway'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                      ),
+                    ),
+                  ),
+
+                  // Connection Test Result Banner
+                  if (_testResult != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _testResult!.success ? Colors.green.shade50 : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _testResult!.success ? Colors.green.shade300 : Colors.red.shade300,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _testResult!.success ? Icons.check_circle_rounded : Icons.error_rounded,
+                            color: _testResult!.success ? Colors.green.shade700 : Colors.red.shade700,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _testResult!.success && _testResult!.latencyMs != null
+                                  ? '${_testResult!.message} (${_testResult!.latencyMs} ms)'
+                                  : _testResult!.message,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: _testResult!.success ? Colors.green.shade900 : Colors.red.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SECTION 2: Provider Choice
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Pilihan Mesin Translasi',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Option 1: LibreTranslate
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _selectedProvider == 'libretranslate'
+                            ? theme.colorScheme.primary
+                            : Colors.grey.shade300,
+                        width: _selectedProvider == 'libretranslate' ? 1.5 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: RadioListTile<String>(
+                      value: 'libretranslate',
+                      groupValue: _selectedProvider,
+                      title: const Row(
+                        children: [
+                          Text('LibreTranslate Self-Hosted', style: TextStyle(fontWeight: FontWeight.w600)),
+                          SizedBox(width: 8),
+                          Chip(
+                            label: Text('DEFAULT FOSS', style: TextStyle(fontSize: 10, color: Colors.green)),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ],
+                      ),
+                      subtitle: const Text('Model Argos Translate open-source tanpa biaya API per-karakter.'),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedProvider = val);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Option 2: BYOK
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _selectedProvider == 'byok'
+                            ? theme.colorScheme.primary
+                            : Colors.grey.shade300,
+                        width: _selectedProvider == 'byok' ? 1.5 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: RadioListTile<String>(
+                      value: 'byok',
+                      groupValue: _selectedProvider,
+                      title: const Text('Bring Your Own Key (BYOK)', style: TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: const Text('Gunakan API key vendor pihak ketiga milik Anda sendiri (DeepL).'),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _selectedProvider = val);
+                      },
+                    ),
+                  ),
+
+                  // BYOK sub-inputs
+                  if (_selectedProvider == 'byok') ...[
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _byokKeyController,
+                      decoration: InputDecoration(
+                        labelText: 'API Key DeepL',
+                        prefixIcon: const Icon(Icons.key_rounded),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SECTION 3: Target Language
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.translate_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Bahasa Target Terjemahan',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: _selectedTargetLang,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'id', child: Text('🇮🇩 Bahasa Indonesia (id)')),
+                      DropdownMenuItem(value: 'en', child: Text('🇬🇧 English (en)')),
+                      DropdownMenuItem(value: 'ja', child: Text('🇯🇵 Japanese (ja)')),
+                      DropdownMenuItem(value: 'zh', child: Text('🇨🇳 Chinese (zh)')),
+                      DropdownMenuItem(value: 'de', child: Text('🇩🇪 German (de)')),
+                      DropdownMenuItem(value: 'fr', child: Text('🇫🇷 French (fr)')),
+                      DropdownMenuItem(value: 'es', child: Text('🇪🇸 Spanish (es)')),
+                      DropdownMenuItem(value: 'ar', child: Text('🇸🇦 Arabic (ar)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedTargetLang = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // SECTION 4: Cache Management
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.storage_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Penyimpanan Cache Lokal (Drift)',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cache terjemahan tersimpan secara lokal dan otomatis dipanggil instan (<200ms) tanpa jaringan.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final cacheRepo = ref.read(translationCacheRepositoryProvider);
+                      final deleted = await cacheRepo.evictOldestEntries(maxEntries: 0, evictCount: 100000);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$deleted entri cache translasi telah dibersihkan.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.delete_sweep_rounded, color: Colors.red),
+                    label: const Text('Bersihkan Seluruh Cache'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: BorderSide(color: Colors.red.shade300),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Section 1: Translation Provider
-          const Text('Mesin Terjemahan (Translation Engine)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          RadioListTile<String>(
-            value: 'libretranslate',
-            groupValue: activeProvider.id.startsWith('byok') ? 'byok' : 'libretranslate',
-            title: const Row(
-              children: [
-                Text('LibreTranslate Self-Hosted'),
-                SizedBox(width: 8),
-                Chip(
-                  label: Text('DEFAULT FOSS', style: TextStyle(fontSize: 10, color: Colors.green)),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-            subtitle: const Text('Mesin Argos Translate sumber terbuka di server VPS mandiri.'),
-            onChanged: (_) {
-              ref.read(activeTranslationProvider.notifier).state = LibreTranslateProvider(
-                baseUrl: _serverController.text.trim(),
-              );
-            },
-          ),
-          RadioListTile<String>(
-            value: 'byok',
-            groupValue: activeProvider.id.startsWith('byok') ? 'byok' : 'libretranslate',
-            title: const Text('Bring Your Own Key (BYOK)'),
-            subtitle: const Text('Gunakan API key vendor pihak ketiga milik Anda sendiri (DeepL / Cloud MT).'),
-            onChanged: (_) {
-              ref.read(activeTranslationProvider.notifier).state = BringYourOwnKeyProvider(
-                providerType: 'deepl',
-                apiKey: _byokKeyController.text.trim(),
-                customEndpoint: _byokEndpointController.text.trim(),
-              );
-            },
-          ),
-          const Divider(height: 32),
-
-          // Section 2: Server Gateway URL
-          const Text('Alamat Translation Gateway', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _serverController,
-            decoration: const InputDecoration(
-              labelText: 'Gateway Base URL',
-              hintText: 'http://localhost:8000/v1 atau https://gateway.domain.com/v1',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            onChanged: (val) {
-              if (activeProvider.id == 'libretranslate') {
-                ref.read(activeTranslationProvider.notifier).state = LibreTranslateProvider(
-                  baseUrl: val.trim(),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Section 3: Target Language
-          const Text('Bahasa Target Default', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: targetLang,
-            decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
-            items: const [
-              DropdownMenuItem(value: 'id', child: Text('Bahasa Indonesia (id)')),
-              DropdownMenuItem(value: 'en', child: Text('English (en)')),
-              DropdownMenuItem(value: 'ja', child: Text('Japanese (ja)')),
-              DropdownMenuItem(value: 'zh', child: Text('Chinese (zh)')),
-              DropdownMenuItem(value: 'de', child: Text('German (de)')),
-              DropdownMenuItem(value: 'fr', child: Text('French (fr)')),
-              DropdownMenuItem(value: 'es', child: Text('Spanish (es)')),
-              DropdownMenuItem(value: 'ar', child: Text('Arabic (ar)')),
-            ],
-            onChanged: (val) {
-              if (val != null) {
-                ref.read(targetLanguageProvider.notifier).state = val;
-              }
-            },
-          ),
-          const Divider(height: 32),
-
-          // Section 4: Local Cache Management
-          const Text('Penyimpanan Cache Lokal (Drift SQLite)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.storage_outlined),
-            title: const Text('Eviksi Cache Otomatis'),
-            subtitle: const Text('Menggunakan algoritma LRU untuk menjaga ukuran database tetap ringan.'),
-            trailing: OutlinedButton(
-              onPressed: () async {
-                final cacheRepo = ref.read(translationCacheRepositoryProvider);
-                final deleted = await cacheRepo.evictOldestEntries(maxEntries: 0, evictCount: 10000);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$deleted entri cache translasi telah dibersihkan.')),
-                  );
-                }
-              },
-              child: const Text('Bersihkan Cache'),
-            ),
-          ),
-          const Divider(height: 32),
-
-          // About Alinea
+          // About Section with App Logo
           Center(
             child: Column(
               children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Alinea',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                ),
                 Text(
-                  'Alinea EPUB Reader v1.0.0',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                  'Versi 1.0.0 (FOSS Edition)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Read first, translate seamlessly when needed.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey.shade500),
                 ),
+                const SizedBox(height: 12),
               ],
             ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );

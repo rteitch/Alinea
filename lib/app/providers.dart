@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/storage/database.dart';
+import '../core/storage/settings_repository.dart';
 import '../features/bookmarks/data/bookmark_repository.dart';
 import '../features/glossary/data/glossary_repository.dart';
 import '../features/highlights/data/highlight_repository.dart';
 import '../features/library/data/book_repository.dart';
+import '../features/translation/data/providers/byok_provider.dart';
 import '../features/translation/data/providers/libretranslate_provider.dart';
 import '../features/translation/data/translation_cache_repository.dart';
 import '../features/translation/domain/translation_coordinator.dart';
@@ -37,9 +39,44 @@ final translationCacheRepositoryProvider = Provider<TranslationCacheRepository>(
   return TranslationCacheRepository(db: ref.watch(databaseProvider));
 });
 
-// Translation Engine Provider
-final activeTranslationProvider = StateProvider<TranslationProvider>((ref) {
-  return LibreTranslateProvider();
+// Settings & Preferences
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepository();
+});
+
+class SettingsNotifier extends StateNotifier<AppSettings> {
+  final SettingsRepository repo;
+
+  SettingsNotifier(this.repo) : super(const AppSettings()) {
+    load();
+  }
+
+  Future<void> load() async {
+    state = await repo.loadSettings();
+  }
+
+  Future<void> save(AppSettings newSettings) async {
+    state = newSettings;
+    await repo.saveSettings(newSettings);
+  }
+}
+
+final appSettingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((ref) {
+  final repo = ref.watch(settingsRepositoryProvider);
+  return SettingsNotifier(repo);
+});
+
+// Translation Engine Provider (dynamically synced with app settings)
+final activeTranslationProvider = Provider<TranslationProvider>((ref) {
+  final settings = ref.watch(appSettingsProvider);
+  if (settings.activeProviderId == 'byok') {
+    return BringYourOwnKeyProvider(
+      providerType: 'deepl',
+      apiKey: settings.byokKey,
+      customEndpoint: settings.byokEndpoint,
+    );
+  }
+  return LibreTranslateProvider(baseUrl: settings.gatewayUrl);
 });
 
 final translationCoordinatorProvider = Provider<TranslationCoordinator>((ref) {
@@ -58,10 +95,11 @@ final readingThemeModeProvider = StateProvider<ReadingThemeMode>((ref) {
   return ReadingThemeMode.light;
 });
 
-final targetLanguageProvider = StateProvider<String>((ref) {
-  return 'id'; // Default Bahasa Indonesia
+final targetLanguageProvider = Provider<String>((ref) {
+  return ref.watch(appSettingsProvider).targetLanguage;
 });
 
 final libraryFilterProvider = StateProvider<String>((ref) {
   return 'all'; // 'all', 'in_progress', 'finished', 'favorite'
 });
+

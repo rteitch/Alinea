@@ -26,7 +26,7 @@ void main() {
 
     // Verify title and library screen elements
     expect(find.text('Alinea'), findsOneWidget);
-    expect(find.text('Library'), findsOneWidget);
+    expect(find.text('READER'), findsOneWidget);
     expect(find.text('Import EPUB'), findsOneWidget);
     expect(find.text('Perpustakaan Masih Kosong'), findsOneWidget);
 
