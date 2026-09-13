@@ -47,7 +47,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       if (result == null || result.files.isEmpty) return;
 
       final pickedFile = result.files.first;
-      final fileBytes = pickedFile.bytes;
+      var fileBytes = pickedFile.bytes;
+
+      if (fileBytes == null && pickedFile.path != null) {
+        final f = File(pickedFile.path!);
+        if (await f.exists()) {
+          fileBytes = await f.readAsBytes();
+        }
+      }
 
       if (fileBytes == null) {
         if (mounted) {
