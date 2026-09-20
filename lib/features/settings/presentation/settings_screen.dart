@@ -4,6 +4,7 @@ import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
+import 'language_picker_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -616,6 +617,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                   ),
+
+                  // Language picker button (shown when auto-detect is enabled)
+                  if (_autoDetectLanguage) ...[
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final detectionLangs = ref.watch(detectionLanguagesProvider);
+                        return OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LanguagePickerScreen()),
+                            );
+                          },
+                          icon: const Icon(Icons.language_rounded, size: 18),
+                          label: Text(
+                            '${detectionLangs.length} bahasa dipilih',
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 14),
 
                   // Target language dropdown

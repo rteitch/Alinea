@@ -564,7 +564,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     final targetLang = ref.read(targetLanguageProvider);
     final autoDetect = ref.read(autoDetectLanguageProvider);
-    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
+    final detectionLangs = ref.read(detectionLanguagesProvider);
+    // When auto-detect is enabled, use first language in list as primary
+    final sourceLang = autoDetect
+        ? (detectionLangs.isNotEmpty ? detectionLangs.first : '')
+        : (_book?.sourceLanguage ?? 'en');
 
     TranslationOverlay.show(
       context,
@@ -580,7 +584,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (cleanText.isEmpty) return;
     final targetLang = ref.read(targetLanguageProvider);
     final autoDetect = ref.read(autoDetectLanguageProvider);
-    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
+    final detectionLangs = ref.read(detectionLanguagesProvider);
+    // When auto-detect is enabled, use first language in list as primary
+    final sourceLang = autoDetect
+        ? (detectionLangs.isNotEmpty ? detectionLangs.first : '')
+        : (_book?.sourceLanguage ?? 'en');
 
     // Pass full chapter text - providers handle chunking internally
     // (FossCloudProvider splits by 500-char chunks, LibreTranslate handles full text)
@@ -622,7 +630,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
 
     final targetLang = ref.read(targetLanguageProvider);
     final autoDetect = ref.read(autoDetectLanguageProvider);
-    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
+    final detectionLangs = ref.read(detectionLanguagesProvider);
+    // When auto-detect is enabled, use first language in list as primary
+    final sourceLang = autoDetect
+        ? (detectionLangs.isNotEmpty ? detectionLangs.first : '')
+        : (_book?.sourceLanguage ?? 'en');
     final coordinator = ref.read(translationCoordinatorProvider);
 
     // Split into paragraphs (non-empty)

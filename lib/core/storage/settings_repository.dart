@@ -11,6 +11,7 @@ class AppSettings {
   final String byokEndpoint;
   final String targetLanguage;
   final bool autoDetectLanguage;
+  final List<String> detectionLanguages;
   final String readingTheme;
   final double fontSize;
 
@@ -21,6 +22,7 @@ class AppSettings {
     this.byokEndpoint = 'https://api-free.deepl.com/v2/translate',
     this.targetLanguage = 'id',
     this.autoDetectLanguage = true,
+    this.detectionLanguages = const ['en', 'id'],
     this.readingTheme = 'light',
     this.fontSize = 16.0,
   });
@@ -32,6 +34,7 @@ class AppSettings {
         'byokEndpoint': byokEndpoint,
         'targetLanguage': targetLanguage,
         'autoDetectLanguage': autoDetectLanguage,
+        'detectionLanguages': detectionLanguages,
         'readingTheme': readingTheme,
         'fontSize': fontSize,
       };
@@ -44,6 +47,7 @@ class AppSettings {
       byokEndpoint: json['byokEndpoint'] as String? ?? 'https://api-free.deepl.com/v2/translate',
       targetLanguage: json['targetLanguage'] as String? ?? 'id',
       autoDetectLanguage: json['autoDetectLanguage'] as bool? ?? true,
+      detectionLanguages: (json['detectionLanguages'] as List<dynamic>?)?.map((e) => e as String).toList() ?? ['en', 'id'],
       readingTheme: json['readingTheme'] as String? ?? 'light',
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
     );
@@ -56,6 +60,7 @@ class AppSettings {
     String? byokEndpoint,
     String? targetLanguage,
     bool? autoDetectLanguage,
+    List<String>? detectionLanguages,
     String? readingTheme,
     double? fontSize,
   }) {
@@ -66,6 +71,7 @@ class AppSettings {
       byokEndpoint: byokEndpoint ?? this.byokEndpoint,
       targetLanguage: targetLanguage ?? this.targetLanguage,
       autoDetectLanguage: autoDetectLanguage ?? this.autoDetectLanguage,
+      detectionLanguages: detectionLanguages ?? this.detectionLanguages,
       readingTheme: readingTheme ?? this.readingTheme,
       fontSize: fontSize ?? this.fontSize,
     );
