@@ -161,6 +161,19 @@ class BookSettings extends Table {
 }
 
 // =========================================================
+// 9. READING SESSIONS (Time tracking)
+// =========================================================
+class ReadingSessions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get bookId => integer().customConstraint('NOT NULL REFERENCES books(id) ON DELETE CASCADE')();
+  DateTimeColumn get startedAt => dateTime()();
+  DateTimeColumn get endedAt => dateTime().nullable()();
+  IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
+  IntColumn get chaptersRead => integer().withDefault(const Constant(0))();
+  IntColumn get wordsTranslated => integer().withDefault(const Constant(0))();
+}
+
+// =========================================================
 // DATABASE CLASS
 // =========================================================
 @DriftDatabase(tables: [
@@ -173,6 +186,7 @@ class BookSettings extends Table {
   TranslationCache,
   GlossaryTerms,
   BookSettings,
+  ReadingSessions,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -180,7 +194,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -204,6 +218,10 @@ class AppDatabase extends _$AppDatabase {
       // Schema v1 → v2: Add book_settings table
       if (from < 2) {
         await m.createTable(bookSettings);
+      }
+      // Schema v2 → v3: Add reading_sessions table
+      if (from < 3) {
+        await m.createTable(readingSessions);
       }
     },
     beforeOpen: (details) async {
@@ -259,6 +277,57 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     }
+  }
+
+  // ========== READING SESSIONS ==========
+
+  Future<int> startReadingSession(int bookId) async {
+    return into(readingSessions).insert(
+      ReadingSessionsCompanion.insert(
+        bookId: bookId,
+        startedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> endReadingSession(int sessionId, {int chaptersRead = 0, int wordsTranslated = 0}) async {
+    final session = await (select(readingSessions)..where((t) => t.id.equals(sessionId))).getSingleOrNull();
+    if (session == null) return;
+
+    final duration = DateTime.now().difference(session.startedAt).inSeconds;
+    await (update(readingSessions)..where((t) => t.id.equals(sessionId))).write(
+      ReadingSessionsCompanion(
+        endedAt: Value(DateTime.now()),
+        durationSeconds: Value(duration),
+        chaptersRead: Value(chaptersRead),
+        wordsTranslated: Value(wordsTranslated),
+      ),
+    );
+  }
+
+  Future<List<ReadingSession>> getReadingSessions(int bookId) async {
+    return (select(readingSessions)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
+        .get();
+  }
+
+  Future<int> getTotalReadingTimeSeconds(int bookId) async {
+    final sessions = await getReadingSessions(bookId);
+    return sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+  }
+
+  Future<Map<String, int>> getReadingStats(int bookId) async {
+    final sessions = await getReadingSessions(bookId);
+    final totalSeconds = sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+    final totalChapters = sessions.fold<int>(0, (sum, s) => sum + s.chaptersRead);
+    final totalWords = sessions.fold<int>(0, (sum, s) => sum + s.wordsTranslated);
+    return {
+      'totalSeconds': totalSeconds,
+      'totalSessions': sessions.length,
+      'totalChapters': totalChapters,
+      'totalWordsTranslated': totalWords,
+    };
   }
 }
 

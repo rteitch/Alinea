@@ -678,6 +678,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
+          // SECTION 3.5: Translation Style
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Gaya Terjemahan',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Natural mengalir seperti bahasa asli, Literal mempertahankan struktur asli, Akademis cocok untuk riset.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentStyle = ref.watch(appSettingsProvider).translationStyle;
+                      return Row(
+                        children: [
+                          _buildTranslationStyleChip(context, ref, 'Natural', 'natural', currentStyle),
+                          const SizedBox(width: 8),
+                          _buildTranslationStyleChip(context, ref, 'Literal', 'literal', currentStyle),
+                          const SizedBox(width: 8),
+                          _buildTranslationStyleChip(context, ref, 'Akademis', 'academic', currentStyle),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // SECTION 4: Theme & Eye Comfort
           Card(
             elevation: 1,
@@ -1116,6 +1161,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTranslationStyleChip(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    String value,
+    String currentStyle,
+  ) {
+    final isSelected = currentStyle == value;
+    return FilterChip(
+      label: Text(label, style: TextStyle(fontSize: 12)),
+      selected: isSelected,
+      onSelected: (_) {
+        ref.read(appSettingsProvider.notifier).save(
+              ref.read(appSettingsProvider).copyWith(translationStyle: value),
+            );
+      },
     );
   }
 }

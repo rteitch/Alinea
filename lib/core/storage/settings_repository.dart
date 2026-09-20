@@ -14,6 +14,7 @@ class AppSettings {
   final List<String> detectionLanguages;
   final String readingTheme;
   final double fontSize;
+  final String translationStyle;
 
   const AppSettings({
     this.gatewayUrl = 'http://10.0.2.2:8000/v1',
@@ -25,6 +26,7 @@ class AppSettings {
     this.detectionLanguages = const ['en', 'id'],
     this.readingTheme = 'light',
     this.fontSize = 16.0,
+    this.translationStyle = 'natural',
   });
 
   Map<String, dynamic> toJson() => {
@@ -37,6 +39,7 @@ class AppSettings {
         'detectionLanguages': detectionLanguages,
         'readingTheme': readingTheme,
         'fontSize': fontSize,
+        'translationStyle': translationStyle,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -50,6 +53,7 @@ class AppSettings {
       detectionLanguages: (json['detectionLanguages'] as List<dynamic>?)?.map((e) => e as String).toList() ?? ['en', 'id'],
       readingTheme: json['readingTheme'] as String? ?? 'light',
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
+      translationStyle: json['translationStyle'] as String? ?? 'natural',
     );
   }
 
@@ -63,6 +67,7 @@ class AppSettings {
     List<String>? detectionLanguages,
     String? readingTheme,
     double? fontSize,
+    String? translationStyle,
   }) {
     return AppSettings(
       gatewayUrl: gatewayUrl ?? this.gatewayUrl,
@@ -74,6 +79,7 @@ class AppSettings {
       detectionLanguages: detectionLanguages ?? this.detectionLanguages,
       readingTheme: readingTheme ?? this.readingTheme,
       fontSize: fontSize ?? this.fontSize,
+      translationStyle: translationStyle ?? this.translationStyle,
     );
   }
 }

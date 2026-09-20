@@ -8,6 +8,7 @@ import '../../../core/services/tts_service.dart';
 import '../../../core/storage/database.dart';
 import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
+import 'reading_stats_screen.dart';
 import 'translation_overlay.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
@@ -20,6 +21,8 @@ class ReaderScreen extends ConsumerStatefulWidget {
 }
 
 class _ReaderScreenState extends ConsumerState<ReaderScreen> {
+  // Added quick theme toggle state
+  ReadingThemeMode _currentTheme = ReadingThemeMode.light;
   final ScrollController _scrollController = ScrollController();
   final PageController _pageController = PageController();
   int _currentChapterIndex = 0;
@@ -92,6 +95,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             _fontSize = bookSettings.fontSize;
             _isPageTranslated = bookSettings.isTranslationEnabled;
             _currentPageIndex = bookSettings.lastPageIndex;
+            // Restore per-book theme
+            _currentTheme = ReadingThemeMode.values.firstWhere(
+              (t) => t.name == bookSettings.readingTheme,
+              orElse: () => ref.read(readingThemeModeProvider),
+            );
+            ref.read(readingThemeModeProvider.notifier).state = _currentTheme;
           }
         });
         await _loadCurrentChapterContent();
@@ -814,6 +823,45 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
+  ReadingThemeMode _nextTheme(ReadingThemeMode current) {
+    switch (current) {
+      case ReadingThemeMode.light:
+        return ReadingThemeMode.sepia;
+      case ReadingThemeMode.sepia:
+        return ReadingThemeMode.dark;
+      case ReadingThemeMode.dark:
+        return ReadingThemeMode.amoled;
+      case ReadingThemeMode.amoled:
+        return ReadingThemeMode.light;
+    }
+  }
+
+  IconData _getThemeIcon(ReadingThemeMode theme) {
+    switch (theme) {
+      case ReadingThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ReadingThemeMode.sepia:
+        return Icons.wb_sunny_rounded;
+      case ReadingThemeMode.dark:
+        return Icons.dark_mode_rounded;
+      case ReadingThemeMode.amoled:
+        return Icons.brightness_1_rounded;
+    }
+  }
+
+  String _getThemeName(ReadingThemeMode theme) {
+    switch (theme) {
+      case ReadingThemeMode.light:
+        return 'Light';
+      case ReadingThemeMode.sepia:
+        return 'Sepia';
+      case ReadingThemeMode.dark:
+        return 'Dark';
+      case ReadingThemeMode.amoled:
+        return 'AMOLED';
+    }
+  }
+
   void _showReadingSettings() {
     showModalBottomSheet(
       context: context,
@@ -1141,6 +1189,44 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           ],
         ),
         actions: [
+          // Quick Theme Toggle
+          IconButton(
+            icon: Icon(_getThemeIcon(_currentTheme), size: 20),
+            tooltip: 'Ganti Tema (${_getThemeName(_currentTheme)})',
+            onPressed: () {
+              setState(() {
+                _currentTheme = _nextTheme(_currentTheme);
+              });
+              ref.read(readingThemeModeProvider.notifier).state = _currentTheme;
+              ref.read(appSettingsProvider.notifier).save(
+                    ref.read(appSettingsProvider).copyWith(readingTheme: _currentTheme.name),
+                  );
+              // Persist per-book setting
+              if (_book?.id != null) {
+                final bookId = _book!.id;
+                ref.read(databaseProvider).upsertBookSetting(
+                      bookId: bookId,
+                      readingTheme: _currentTheme.name,
+                    );
+              }
+            },
+          ),
+          // Reading Stats
+          IconButton(
+            icon: const Icon(Icons.bar_chart_rounded, size: 20),
+            tooltip: 'Statistik Membaca',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ReadingStatsScreen(
+                    bookId: widget.bookId,
+                    bookTitle: _book?.title ?? '',
+                  ),
+                ),
+              );
+            },
+          ),
           // Inline Page Translation Toggle (Terjemahkan Langsung Halaman Ini)
           IconButton(
             icon: _isTranslatingPage
