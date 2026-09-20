@@ -8,20 +8,22 @@ import '../../../core/errors/failures.dart';
 import '../../../core/storage/database.dart';
 import '../../reader/presentation/reader_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import 'cover_gallery_screen.dart';
 
 final booksListProvider = FutureProvider.autoDispose<List<Book>>((ref) async {
   final repo = ref.watch(bookRepositoryProvider);
   final filter = ref.watch(libraryFilterProvider);
+  final sortBy = ref.watch(librarySortProvider);
 
   switch (filter) {
     case 'in_progress':
-      return await repo.getBooks(readingStatus: 'in_progress');
+      return await repo.getBooks(readingStatus: 'in_progress', sortBy: sortBy);
     case 'finished':
-      return await repo.getBooks(readingStatus: 'finished');
+      return await repo.getBooks(readingStatus: 'finished', sortBy: sortBy);
     case 'favorite':
-      return await repo.getBooks(isFavorite: true);
+      return await repo.getBooks(isFavorite: true, sortBy: sortBy);
     default:
-      return await repo.getBooks();
+      return await repo.getBooks(sortBy: sortBy);
   }
 });
 
@@ -35,6 +37,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   bool _isImporting = false;
   String _searchQuery = '';
+  String _viewMode = 'grid'; // 'grid' or 'list'
 
   Future<void> _handleImportEpub() async {
     try {
@@ -164,6 +167,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ],
         ),
         actions: [
+          // View toggle
+          IconButton(
+            icon: Icon(_viewMode == 'grid' ? Icons.view_list_rounded : Icons.grid_view_rounded),
+            tooltip: _viewMode == 'grid' ? 'Tampilan List' : 'Tampilan Grid',
+            onPressed: () {
+              setState(() {
+                _viewMode = _viewMode == 'grid' ? 'list' : 'grid';
+              });
+            },
+          ),
+          // Sort dropdown
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort_rounded),
+            tooltip: 'Urutkan',
+            onSelected: (value) {
+              ref.read(librarySortProvider.notifier).state = value;
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'date_added', child: Text('Tanggal Ditambahkan')),
+              const PopupMenuItem(value: 'title', child: Text('Judul (A-Z)')),
+              const PopupMenuItem(value: 'author', child: Text('Penulis (A-Z)')),
+              const PopupMenuItem(value: 'last_opened', child: Text('Terakhir Dibuka')),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Pengaturan & Transparansi FOSS',
@@ -218,76 +245,120 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ),
       ),
-      body: _isImporting
-          ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Sedang memproses & memvalidasi file EPUB...'),
-                ],
-              ),
-            )
-          : booksAsync.when(
-              data: (books) {
-                final filtered = books.where((b) {
-                  if (_searchQuery.isEmpty) return true;
-                  final titleMatch = b.title.toLowerCase().contains(_searchQuery);
-                  final authorMatch = (b.author ?? '').toLowerCase().contains(_searchQuery);
-                  return titleMatch || authorMatch;
-                }).toList();
+       body: _isImporting
+           ? const Center(
+               child: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   CircularProgressIndicator(),
+                   SizedBox(height: 16),
+                   Text('Sedang memproses & memvalidasi file EPUB...'),
+                 ],
+               ),
+             )
+           : booksAsync.when(
+               data: (books) {
+                 final filtered = books.where((b) {
+                   if (_searchQuery.isEmpty) return true;
+                   final titleMatch = b.title.toLowerCase().contains(_searchQuery);
+                   final authorMatch = (b.author ?? '').toLowerCase().contains(_searchQuery);
+                   return titleMatch || authorMatch;
+                 }).toList();
 
-                if (filtered.isEmpty) {
-                  return _buildEmptyState();
-                }
+                 if (filtered.isEmpty) {
+                   return _buildEmptyState();
+                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.58,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                  ),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final book = filtered[index];
-                    return _BookCard(
-                      book: book,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ReaderScreen(bookId: book.id),
-                          ),
-                        );
-                        ref.invalidate(booksListProvider);
-                      },
-                      onFavoriteToggle: () async {
-                        final repo = ref.read(bookRepositoryProvider);
-                        await repo.toggleFavorite(book.id);
-                        ref.invalidate(booksListProvider);
-                      },
-                      onArchive: () async {
-                        final repo = ref.read(bookRepositoryProvider);
-                        await repo.archiveBook(book.id);
-                        ref.invalidate(booksListProvider);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Buku telah diarsipkan.')),
-                          );
-                        }
-                      },
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Text('Terjadi kesalahan memuat perpustakaan: $err'),
-              ),
-            ),
+                 if (_viewMode == 'list') {
+                   return ListView.builder(
+                     padding: const EdgeInsets.all(16),
+                     itemCount: filtered.length,
+                     itemBuilder: (context, index) {
+                       final book = filtered[index];
+                       return _BookListTile(
+                         book: book,
+                         onTap: () async {
+                           await Navigator.push(
+                             context,
+                             MaterialPageRoute(
+                               builder: (_) => ReaderScreen(bookId: book.id),
+                             ),
+                           );
+                           ref.invalidate(booksListProvider);
+                         },
+                         onFavoriteToggle: () async {
+                           final repo = ref.read(bookRepositoryProvider);
+                           await repo.toggleFavorite(book.id);
+                           ref.invalidate(booksListProvider);
+                         },
+                       );
+                     },
+                   );
+                 }
+
+                 return GridView.builder(
+                   padding: const EdgeInsets.all(16),
+                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                     crossAxisCount: 2,
+                     childAspectRatio: 0.58,
+                     crossAxisSpacing: 14,
+                     mainAxisSpacing: 14,
+                   ),
+                   itemCount: filtered.length,
+                   itemBuilder: (context, index) {
+                     final book = filtered[index];
+                     return _BookCard(
+                       book: book,
+                       onTap: () async {
+                         await Navigator.push(
+                           context,
+                           MaterialPageRoute(
+                             builder: (_) => ReaderScreen(bookId: book.id),
+                           ),
+                         );
+                         ref.invalidate(booksListProvider);
+                       },
+                       onFavoriteToggle: () async {
+                         final repo = ref.read(bookRepositoryProvider);
+                         await repo.toggleFavorite(book.id);
+                         ref.invalidate(booksListProvider);
+                       },
+                       onArchive: () async {
+                         final repo = ref.read(bookRepositoryProvider);
+                         await repo.archiveBook(book.id);
+                         ref.invalidate(booksListProvider);
+                         if (context.mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(content: Text('Buku telah diarsipkan.')),
+                           );
+                         }
+                       },
+                       onCoverTap: () {
+                         final booksWithCovers = filtered.where(
+                           (b) => b.coverPath != null && File(b.coverPath!).existsSync(),
+                         ).toList();
+                         final coverIndex = booksWithCovers.indexWhere((b) => b.id == book.id);
+                         if (coverIndex >= 0) {
+                           Navigator.push(
+                             context,
+                             MaterialPageRoute(
+                               builder: (_) => CoverGalleryScreen(
+                                 books: booksWithCovers,
+                                 initialIndex: coverIndex,
+                               ),
+                             ),
+                           );
+                         }
+                       },
+                     );
+                   },
+                 );
+               },
+               loading: () => const Center(child: CircularProgressIndicator()),
+               error: (err, stack) => Center(
+                 child: Text('Terjadi kesalahan memuat perpustakaan: $err'),
+               ),
+             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _handleImportEpub,
         icon: const Icon(Icons.add),
@@ -388,12 +459,14 @@ class _BookCard extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final VoidCallback onArchive;
+  final VoidCallback? onCoverTap;
 
   const _BookCard({
     required this.book,
     required this.onTap,
     required this.onFavoriteToggle,
     required this.onArchive,
+    this.onCoverTap,
   });
 
   @override
@@ -417,58 +490,61 @@ class _BookCard extends ConsumerWidget {
             // Cover Image or Stylized Placeholder
             Expanded(
               flex: 4,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (book.coverPath != null && File(book.coverPath!).existsSync())
-                    Image.file(File(book.coverPath!), fit: BoxFit.cover)
-                  else
-                    Container(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      padding: const EdgeInsets.all(12),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.auto_stories_rounded,
-                            size: 36,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            book.title,
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              child: GestureDetector(
+                onTap: onCoverTap,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (book.coverPath != null && File(book.coverPath!).existsSync())
+                      Image.file(File(book.coverPath!), fit: BoxFit.cover)
+                    else
+                      Container(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        padding: const EdgeInsets.all(12),
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_stories_rounded,
+                              size: 36,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Favorite Star Badge
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Colors.black.withAlpha(100),
-                      child: IconButton(
-                        iconSize: 16,
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          book.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                          color: book.isFavorite ? Colors.amber : Colors.white,
+                            const SizedBox(height: 6),
+                            Text(
+                              book.title,
+                              maxLines: 2,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
                         ),
-                        onPressed: onFavoriteToggle,
+                      ),
+                    // Favorite Star Badge
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.black.withAlpha(100),
+                        child: IconButton(
+                          iconSize: 16,
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            book.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                            color: book.isFavorite ? Colors.amber : Colors.white,
+                          ),
+                          onPressed: onFavoriteToggle,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             // Metadata & Progress
@@ -572,5 +648,126 @@ class _BookCard extends ConsumerWidget {
       default:
         return Colors.grey.shade600;
     }
+  }
+}
+
+class _BookListTile extends ConsumerWidget {
+  final Book book;
+  final VoidCallback onTap;
+  final VoidCallback onFavoriteToggle;
+
+  const _BookListTile({
+    required this.book,
+    required this.onTap,
+    required this.onFavoriteToggle,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progressAsync = ref.watch(
+      FutureProvider.autoDispose<double>((r) {
+        return r.watch(bookRepositoryProvider).getOverallProgressPct(book.id);
+      }),
+    );
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              // Cover thumbnail
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 50,
+                  height: 70,
+                  child: book.coverPath != null && File(book.coverPath!).existsSync()
+                      ? Image.file(File(book.coverPath!), fit: BoxFit.cover)
+                      : Container(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.auto_stories_rounded,
+                            size: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Book info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    if (book.author != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        book.author!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    progressAsync.when(
+                      data: (pct) {
+                        final pctInt = (pct * 100).toInt();
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: LinearProgressIndicator(
+                                  value: pct.clamp(0.0, 1.0),
+                                  minHeight: 4,
+                                  backgroundColor: Theme.of(context).colorScheme.outlineVariant.withAlpha(90),
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$pctInt%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox(height: 16),
+                      error: (_, _) => const SizedBox(),
+                    ),
+                  ],
+                ),
+              ),
+              // Favorite button
+              IconButton(
+                icon: Icon(
+                  book.isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: book.isFavorite ? Colors.amber : Colors.grey.shade400,
+                  size: 22,
+                ),
+                onPressed: onFavoriteToggle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

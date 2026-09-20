@@ -129,6 +129,14 @@ final libraryFilterProvider = StateProvider<String>((ref) {
   return 'all'; // 'all', 'in_progress', 'finished', 'favorite'
 });
 
+final libraryViewModeProvider = StateProvider<String>((ref) {
+  return 'grid'; // 'grid' or 'list'
+});
+
+final librarySortProvider = StateProvider<String>((ref) {
+  return 'date_added'; // 'date_added', 'title', 'author', 'progress', 'last_opened'
+});
+
 // Book Settings (per-book reader preferences)
 final bookSettingsProvider = FutureProvider.family<BookSetting?, int>((ref, bookId) async {
   final db = ref.watch(databaseProvider);

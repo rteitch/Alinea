@@ -123,6 +123,7 @@ class BookRepository {
     String? readingStatus,
     bool? isFavorite,
     bool includeArchived = false,
+    String sortBy = 'date_added',
   }) async {
     final query = db.select(db.books);
 
@@ -136,7 +137,25 @@ class BookRepository {
       query.where((tbl) => tbl.isFavorite.equals(isFavorite));
     }
 
-    query.orderBy([(t) => OrderingTerm.desc(t.addedAt)]);
+    switch (sortBy) {
+      case 'title':
+        query.orderBy([(t) => OrderingTerm.asc(t.title)]);
+        break;
+      case 'author':
+        query.orderBy([
+          (t) => OrderingTerm.asc(t.author),
+          (t) => OrderingTerm.asc(t.title),
+        ]);
+        break;
+      case 'progress':
+      case 'last_opened':
+        query.orderBy([(t) => OrderingTerm.desc(t.lastOpenedAt)]);
+        break;
+      case 'date_added':
+      default:
+        query.orderBy([(t) => OrderingTerm.desc(t.addedAt)]);
+        break;
+    }
     return await query.get();
   }
 
