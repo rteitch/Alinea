@@ -19,6 +19,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   String _selectedProvider = 'libretranslate';
   String _selectedTargetLang = 'id';
+  bool _autoDetectLanguage = true;
   bool _isSaving = false;
   bool _isTesting = false;
   ({bool success, String message, int? latencyMs})? _testResult;
@@ -31,6 +32,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final settings = ref.read(appSettingsProvider);
       _selectedProvider = settings.activeProviderId;
       _selectedTargetLang = settings.targetLanguage;
+      _autoDetectLanguage = settings.autoDetectLanguage;
       _serverController = TextEditingController(text: settings.gatewayUrl);
       _byokKeyController = TextEditingController(text: settings.byokKey);
       _byokEndpointController = TextEditingController(text: settings.byokEndpoint);
@@ -72,6 +74,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           byokKey: _byokKeyController.text.trim(),
           byokEndpoint: _byokEndpointController.text.trim(),
           targetLanguage: _selectedTargetLang,
+          autoDetectLanguage: _autoDetectLanguage,
         );
 
     await ref.read(appSettingsProvider.notifier).save(newSettings);
@@ -356,7 +359,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pilih mesin translasi yang ingin digunakan. FOSS Cloud gratis tanpa batas, Self-Hosted butuh PC aktif.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
 
                   // Option 1: Alinea FOSS Cloud
                   Container(
@@ -472,7 +480,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: RadioListTile<String>(
                       value: 'byok',
                       groupValue: _selectedProvider,
-                      title: const Text('Bring Your Own Key (BYOK)', style: TextStyle(fontWeight: FontWeight.w600)),
+                      title: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Bring Your Own Key (BYOK)',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withAlpha(25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Colors.orange.withAlpha(120)),
+                            ),
+                            child: const Text(
+                              'API KEY',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       subtitle: const Text('Gunakan API key vendor pihak ketiga milik Anda sendiri (DeepL).'),
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedProvider = val);
@@ -488,7 +523,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       decoration: InputDecoration(
                         labelText: 'API Key DeepL',
                         prefixIcon: const Icon(Icons.key_rounded),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       ),
                     ),
                   ],
@@ -512,15 +548,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.translate_rounded, color: theme.colorScheme.primary),
                       const SizedBox(width: 10),
                       Text(
-                        'Bahasa Target Terjemahan',
+                        'Bahasa Terjemahan',
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Atur bahasa sumber (otomatis dari metadata EPUB) dan bahasa target terjemahan.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Auto-detect toggle
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _autoDetectLanguage
+                          ? theme.colorScheme.primaryContainer.withAlpha(40)
+                          : theme.colorScheme.surfaceContainerHighest.withAlpha(60),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _autoDetectLanguage
+                            ? theme.colorScheme.primary.withAlpha(80)
+                            : theme.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_fix_high_rounded,
+                          size: 20,
+                          color: _autoDetectLanguage
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Deteksi Bahasa Sumber Otomatis',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _autoDetectLanguage
+                                      ? theme.colorScheme.onSurface
+                                      : theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Bahasa sumber dideteksi otomatis dari teks. Matikan jika ingin pakai metadata EPUB.',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _autoDetectLanguage,
+                          onChanged: (val) => setState(() => _autoDetectLanguage = val),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Target language dropdown
                   DropdownButtonFormField<String>(
                     value: _selectedTargetLang,
                     decoration: InputDecoration(
+                      labelText: 'Bahasa Target',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
@@ -573,7 +675,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Consumer(
                     builder: (context, ref, _) {
                       final currentTheme = ref.watch(readingThemeModeProvider);
-                      return Row(
+                      return Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _buildThemeOption(
                             label: 'Light',
@@ -584,7 +688,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             mode: ReadingThemeMode.light,
                             current: currentTheme,
                           ),
-                          const SizedBox(width: 8),
                           _buildThemeOption(
                             label: 'Sepia',
                             sub: 'Anti-Lelah',
@@ -594,7 +697,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             mode: ReadingThemeMode.sepia,
                             current: currentTheme,
                           ),
-                          const SizedBox(width: 8),
                           _buildThemeOption(
                             label: 'Dark',
                             sub: 'Malam',
@@ -604,7 +706,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             mode: ReadingThemeMode.dark,
                             current: currentTheme,
                           ),
-                          const SizedBox(width: 8),
                           _buildThemeOption(
                             label: 'AMOLED',
                             sub: 'Hemat Baterai',
@@ -800,7 +901,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required ReadingThemeMode current,
   }) {
     final isSelected = mode == current;
-    return Expanded(
+    return SizedBox(
+      width: 72,
       child: GestureDetector(
         onTap: () {
           ref.read(readingThemeModeProvider.notifier).state = mode;

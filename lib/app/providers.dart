@@ -117,6 +117,10 @@ final targetLanguageProvider = Provider<String>((ref) {
   return ref.watch(appSettingsProvider).targetLanguage;
 });
 
+final autoDetectLanguageProvider = Provider<bool>((ref) {
+  return ref.watch(appSettingsProvider).autoDetectLanguage;
+});
+
 final libraryFilterProvider = StateProvider<String>((ref) {
   return 'all'; // 'all', 'in_progress', 'finished', 'favorite'
 });

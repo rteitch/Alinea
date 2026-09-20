@@ -31,8 +31,12 @@ class LibreTranslateProvider implements TranslationProvider {
 
   String _normalizeLang(String lang) {
     final clean = lang.trim().toLowerCase();
+    // Empty string = auto-detect (LibreTranslate uses 'auto')
+    if (clean.isEmpty) return 'auto';
     // Handle undefined/undetermined language codes
-    if (clean.isEmpty || clean == 'und' || clean == 'mis' || clean == 'zxx' || clean == 'mul') return 'en';
+    if (clean == 'und' || clean == 'mis' || clean == 'zxx' || clean == 'mul') return 'en';
+    // Handle iso3 codes (LibreTranslate accepts both iso2 and iso3)
+    if (clean.length == 3) return clean;
     const iso3To2 = {
       'eng': 'en',
       'ind': 'id',

@@ -563,7 +563,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (clean.isEmpty) return;
 
     final targetLang = ref.read(targetLanguageProvider);
-    final sourceLang = _book?.sourceLanguage ?? 'en';
+    final autoDetect = ref.read(autoDetectLanguageProvider);
+    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
 
     TranslationOverlay.show(
       context,
@@ -578,7 +579,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final cleanText = _cleanHtmlToReadableText(_currentChapterContent);
     if (cleanText.isEmpty) return;
     final targetLang = ref.read(targetLanguageProvider);
-    final sourceLang = _book?.sourceLanguage ?? 'en';
+    final autoDetect = ref.read(autoDetectLanguageProvider);
+    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
 
     // Pass full chapter text - providers handle chunking internally
     // (FossCloudProvider splits by 500-char chunks, LibreTranslate handles full text)
@@ -619,7 +621,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (rawText.isEmpty || rawText == 'Bab ini tidak memiliki konten teks.') return;
 
     final targetLang = ref.read(targetLanguageProvider);
-    final sourceLang = _book?.sourceLanguage ?? 'en';
+    final autoDetect = ref.read(autoDetectLanguageProvider);
+    final sourceLang = autoDetect ? '' : (_book?.sourceLanguage ?? 'en');
     final coordinator = ref.read(translationCoordinatorProvider);
 
     // Split into paragraphs (non-empty)

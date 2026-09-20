@@ -244,7 +244,7 @@ class FossCloudProvider implements TranslationProvider {
 
   String _normalizeLang(String lang) {
     final clean = lang.trim().toLowerCase();
-    // Handle undefined/undetermined language codes
+    // MyMemory requires a valid language pair - fallback to 'en' for empty/undetermined
     if (clean.isEmpty || clean == 'und' || clean == 'mis' || clean == 'zxx' || clean == 'mul') return 'en';
     const iso3To2 = {
       'eng': 'en',

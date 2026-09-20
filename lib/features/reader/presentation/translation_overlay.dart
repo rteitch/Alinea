@@ -350,7 +350,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Teks Asli (${widget.sourceLanguage.toUpperCase()}):',
+                          'Teks Asli (${widget.sourceLanguage.isEmpty ? 'Auto' : widget.sourceLanguage.toUpperCase()}):',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

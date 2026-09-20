@@ -10,6 +10,7 @@ class AppSettings {
   final String byokKey;
   final String byokEndpoint;
   final String targetLanguage;
+  final bool autoDetectLanguage;
   final String readingTheme;
   final double fontSize;
 
@@ -19,6 +20,7 @@ class AppSettings {
     this.byokKey = '',
     this.byokEndpoint = 'https://api-free.deepl.com/v2/translate',
     this.targetLanguage = 'id',
+    this.autoDetectLanguage = true,
     this.readingTheme = 'light',
     this.fontSize = 16.0,
   });
@@ -29,6 +31,7 @@ class AppSettings {
         'byokKey': byokKey,
         'byokEndpoint': byokEndpoint,
         'targetLanguage': targetLanguage,
+        'autoDetectLanguage': autoDetectLanguage,
         'readingTheme': readingTheme,
         'fontSize': fontSize,
       };
@@ -40,6 +43,7 @@ class AppSettings {
       byokKey: json['byokKey'] as String? ?? '',
       byokEndpoint: json['byokEndpoint'] as String? ?? 'https://api-free.deepl.com/v2/translate',
       targetLanguage: json['targetLanguage'] as String? ?? 'id',
+      autoDetectLanguage: json['autoDetectLanguage'] as bool? ?? true,
       readingTheme: json['readingTheme'] as String? ?? 'light',
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
     );
@@ -51,6 +55,7 @@ class AppSettings {
     String? byokKey,
     String? byokEndpoint,
     String? targetLanguage,
+    bool? autoDetectLanguage,
     String? readingTheme,
     double? fontSize,
   }) {
@@ -60,6 +65,7 @@ class AppSettings {
       byokKey: byokKey ?? this.byokKey,
       byokEndpoint: byokEndpoint ?? this.byokEndpoint,
       targetLanguage: targetLanguage ?? this.targetLanguage,
+      autoDetectLanguage: autoDetectLanguage ?? this.autoDetectLanguage,
       readingTheme: readingTheme ?? this.readingTheme,
       fontSize: fontSize ?? this.fontSize,
     );
