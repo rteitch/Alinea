@@ -129,3 +129,9 @@ final libraryFilterProvider = StateProvider<String>((ref) {
   return 'all'; // 'all', 'in_progress', 'finished', 'favorite'
 });
 
+// Book Settings (per-book reader preferences)
+final bookSettingsProvider = FutureProvider.family<BookSetting?, int>((ref, bookId) async {
+  final db = ref.watch(databaseProvider);
+  return db.getBookSetting(bookId);
+});
+

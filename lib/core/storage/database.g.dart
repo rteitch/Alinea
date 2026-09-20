@@ -4696,6 +4696,576 @@ class GlossaryTermsCompanion extends UpdateCompanion<GlossaryTerm> {
   }
 }
 
+class $BookSettingsTable extends BookSettings
+    with TableInfo<$BookSettingsTable, BookSetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BookSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<int> bookId = GeneratedColumn<int>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints:
+        'NOT NULL UNIQUE REFERENCES books(id) ON DELETE CASCADE',
+  );
+  static const VerificationMeta _fontSizeMeta = const VerificationMeta(
+    'fontSize',
+  );
+  @override
+  late final GeneratedColumn<double> fontSize = GeneratedColumn<double>(
+    'font_size',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(16.0),
+  );
+  static const VerificationMeta _readingThemeMeta = const VerificationMeta(
+    'readingTheme',
+  );
+  @override
+  late final GeneratedColumn<String> readingTheme = GeneratedColumn<String>(
+    'reading_theme',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('light'),
+  );
+  static const VerificationMeta _isTranslationEnabledMeta =
+      const VerificationMeta('isTranslationEnabled');
+  @override
+  late final GeneratedColumn<bool> isTranslationEnabled = GeneratedColumn<bool>(
+    'is_translation_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_translation_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _translationStyleMeta = const VerificationMeta(
+    'translationStyle',
+  );
+  @override
+  late final GeneratedColumn<String> translationStyle = GeneratedColumn<String>(
+    'translation_style',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('natural'),
+  );
+  static const VerificationMeta _lastPageIndexMeta = const VerificationMeta(
+    'lastPageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> lastPageIndex = GeneratedColumn<int>(
+    'last_page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastScrollOffsetMeta = const VerificationMeta(
+    'lastScrollOffset',
+  );
+  @override
+  late final GeneratedColumn<double> lastScrollOffset = GeneratedColumn<double>(
+    'last_scroll_offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookId,
+    fontSize,
+    readingTheme,
+    isTranslationEnabled,
+    translationStyle,
+    lastPageIndex,
+    lastScrollOffset,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'book_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BookSetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('font_size')) {
+      context.handle(
+        _fontSizeMeta,
+        fontSize.isAcceptableOrUnknown(data['font_size']!, _fontSizeMeta),
+      );
+    }
+    if (data.containsKey('reading_theme')) {
+      context.handle(
+        _readingThemeMeta,
+        readingTheme.isAcceptableOrUnknown(
+          data['reading_theme']!,
+          _readingThemeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_translation_enabled')) {
+      context.handle(
+        _isTranslationEnabledMeta,
+        isTranslationEnabled.isAcceptableOrUnknown(
+          data['is_translation_enabled']!,
+          _isTranslationEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('translation_style')) {
+      context.handle(
+        _translationStyleMeta,
+        translationStyle.isAcceptableOrUnknown(
+          data['translation_style']!,
+          _translationStyleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_page_index')) {
+      context.handle(
+        _lastPageIndexMeta,
+        lastPageIndex.isAcceptableOrUnknown(
+          data['last_page_index']!,
+          _lastPageIndexMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_scroll_offset')) {
+      context.handle(
+        _lastScrollOffsetMeta,
+        lastScrollOffset.isAcceptableOrUnknown(
+          data['last_scroll_offset']!,
+          _lastScrollOffsetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BookSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BookSetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}book_id'],
+      )!,
+      fontSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}font_size'],
+      )!,
+      readingTheme: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reading_theme'],
+      )!,
+      isTranslationEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_translation_enabled'],
+      )!,
+      translationStyle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}translation_style'],
+      )!,
+      lastPageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_page_index'],
+      )!,
+      lastScrollOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}last_scroll_offset'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BookSettingsTable createAlias(String alias) {
+    return $BookSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class BookSetting extends DataClass implements Insertable<BookSetting> {
+  final int id;
+  final int bookId;
+  final double fontSize;
+  final String readingTheme;
+  final bool isTranslationEnabled;
+  final String translationStyle;
+  final int lastPageIndex;
+  final double lastScrollOffset;
+  final DateTime updatedAt;
+  const BookSetting({
+    required this.id,
+    required this.bookId,
+    required this.fontSize,
+    required this.readingTheme,
+    required this.isTranslationEnabled,
+    required this.translationStyle,
+    required this.lastPageIndex,
+    required this.lastScrollOffset,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['book_id'] = Variable<int>(bookId);
+    map['font_size'] = Variable<double>(fontSize);
+    map['reading_theme'] = Variable<String>(readingTheme);
+    map['is_translation_enabled'] = Variable<bool>(isTranslationEnabled);
+    map['translation_style'] = Variable<String>(translationStyle);
+    map['last_page_index'] = Variable<int>(lastPageIndex);
+    map['last_scroll_offset'] = Variable<double>(lastScrollOffset);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BookSettingsCompanion toCompanion(bool nullToAbsent) {
+    return BookSettingsCompanion(
+      id: Value(id),
+      bookId: Value(bookId),
+      fontSize: Value(fontSize),
+      readingTheme: Value(readingTheme),
+      isTranslationEnabled: Value(isTranslationEnabled),
+      translationStyle: Value(translationStyle),
+      lastPageIndex: Value(lastPageIndex),
+      lastScrollOffset: Value(lastScrollOffset),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BookSetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BookSetting(
+      id: serializer.fromJson<int>(json['id']),
+      bookId: serializer.fromJson<int>(json['bookId']),
+      fontSize: serializer.fromJson<double>(json['fontSize']),
+      readingTheme: serializer.fromJson<String>(json['readingTheme']),
+      isTranslationEnabled: serializer.fromJson<bool>(
+        json['isTranslationEnabled'],
+      ),
+      translationStyle: serializer.fromJson<String>(json['translationStyle']),
+      lastPageIndex: serializer.fromJson<int>(json['lastPageIndex']),
+      lastScrollOffset: serializer.fromJson<double>(json['lastScrollOffset']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'bookId': serializer.toJson<int>(bookId),
+      'fontSize': serializer.toJson<double>(fontSize),
+      'readingTheme': serializer.toJson<String>(readingTheme),
+      'isTranslationEnabled': serializer.toJson<bool>(isTranslationEnabled),
+      'translationStyle': serializer.toJson<String>(translationStyle),
+      'lastPageIndex': serializer.toJson<int>(lastPageIndex),
+      'lastScrollOffset': serializer.toJson<double>(lastScrollOffset),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BookSetting copyWith({
+    int? id,
+    int? bookId,
+    double? fontSize,
+    String? readingTheme,
+    bool? isTranslationEnabled,
+    String? translationStyle,
+    int? lastPageIndex,
+    double? lastScrollOffset,
+    DateTime? updatedAt,
+  }) => BookSetting(
+    id: id ?? this.id,
+    bookId: bookId ?? this.bookId,
+    fontSize: fontSize ?? this.fontSize,
+    readingTheme: readingTheme ?? this.readingTheme,
+    isTranslationEnabled: isTranslationEnabled ?? this.isTranslationEnabled,
+    translationStyle: translationStyle ?? this.translationStyle,
+    lastPageIndex: lastPageIndex ?? this.lastPageIndex,
+    lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BookSetting copyWithCompanion(BookSettingsCompanion data) {
+    return BookSetting(
+      id: data.id.present ? data.id.value : this.id,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      fontSize: data.fontSize.present ? data.fontSize.value : this.fontSize,
+      readingTheme: data.readingTheme.present
+          ? data.readingTheme.value
+          : this.readingTheme,
+      isTranslationEnabled: data.isTranslationEnabled.present
+          ? data.isTranslationEnabled.value
+          : this.isTranslationEnabled,
+      translationStyle: data.translationStyle.present
+          ? data.translationStyle.value
+          : this.translationStyle,
+      lastPageIndex: data.lastPageIndex.present
+          ? data.lastPageIndex.value
+          : this.lastPageIndex,
+      lastScrollOffset: data.lastScrollOffset.present
+          ? data.lastScrollOffset.value
+          : this.lastScrollOffset,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookSetting(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('fontSize: $fontSize, ')
+          ..write('readingTheme: $readingTheme, ')
+          ..write('isTranslationEnabled: $isTranslationEnabled, ')
+          ..write('translationStyle: $translationStyle, ')
+          ..write('lastPageIndex: $lastPageIndex, ')
+          ..write('lastScrollOffset: $lastScrollOffset, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    bookId,
+    fontSize,
+    readingTheme,
+    isTranslationEnabled,
+    translationStyle,
+    lastPageIndex,
+    lastScrollOffset,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BookSetting &&
+          other.id == this.id &&
+          other.bookId == this.bookId &&
+          other.fontSize == this.fontSize &&
+          other.readingTheme == this.readingTheme &&
+          other.isTranslationEnabled == this.isTranslationEnabled &&
+          other.translationStyle == this.translationStyle &&
+          other.lastPageIndex == this.lastPageIndex &&
+          other.lastScrollOffset == this.lastScrollOffset &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
+  final Value<int> id;
+  final Value<int> bookId;
+  final Value<double> fontSize;
+  final Value<String> readingTheme;
+  final Value<bool> isTranslationEnabled;
+  final Value<String> translationStyle;
+  final Value<int> lastPageIndex;
+  final Value<double> lastScrollOffset;
+  final Value<DateTime> updatedAt;
+  const BookSettingsCompanion({
+    this.id = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.fontSize = const Value.absent(),
+    this.readingTheme = const Value.absent(),
+    this.isTranslationEnabled = const Value.absent(),
+    this.translationStyle = const Value.absent(),
+    this.lastPageIndex = const Value.absent(),
+    this.lastScrollOffset = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  BookSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    required int bookId,
+    this.fontSize = const Value.absent(),
+    this.readingTheme = const Value.absent(),
+    this.isTranslationEnabled = const Value.absent(),
+    this.translationStyle = const Value.absent(),
+    this.lastPageIndex = const Value.absent(),
+    this.lastScrollOffset = const Value.absent(),
+    required DateTime updatedAt,
+  }) : bookId = Value(bookId),
+       updatedAt = Value(updatedAt);
+  static Insertable<BookSetting> custom({
+    Expression<int>? id,
+    Expression<int>? bookId,
+    Expression<double>? fontSize,
+    Expression<String>? readingTheme,
+    Expression<bool>? isTranslationEnabled,
+    Expression<String>? translationStyle,
+    Expression<int>? lastPageIndex,
+    Expression<double>? lastScrollOffset,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookId != null) 'book_id': bookId,
+      if (fontSize != null) 'font_size': fontSize,
+      if (readingTheme != null) 'reading_theme': readingTheme,
+      if (isTranslationEnabled != null)
+        'is_translation_enabled': isTranslationEnabled,
+      if (translationStyle != null) 'translation_style': translationStyle,
+      if (lastPageIndex != null) 'last_page_index': lastPageIndex,
+      if (lastScrollOffset != null) 'last_scroll_offset': lastScrollOffset,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  BookSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? bookId,
+    Value<double>? fontSize,
+    Value<String>? readingTheme,
+    Value<bool>? isTranslationEnabled,
+    Value<String>? translationStyle,
+    Value<int>? lastPageIndex,
+    Value<double>? lastScrollOffset,
+    Value<DateTime>? updatedAt,
+  }) {
+    return BookSettingsCompanion(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      fontSize: fontSize ?? this.fontSize,
+      readingTheme: readingTheme ?? this.readingTheme,
+      isTranslationEnabled: isTranslationEnabled ?? this.isTranslationEnabled,
+      translationStyle: translationStyle ?? this.translationStyle,
+      lastPageIndex: lastPageIndex ?? this.lastPageIndex,
+      lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<int>(bookId.value);
+    }
+    if (fontSize.present) {
+      map['font_size'] = Variable<double>(fontSize.value);
+    }
+    if (readingTheme.present) {
+      map['reading_theme'] = Variable<String>(readingTheme.value);
+    }
+    if (isTranslationEnabled.present) {
+      map['is_translation_enabled'] = Variable<bool>(
+        isTranslationEnabled.value,
+      );
+    }
+    if (translationStyle.present) {
+      map['translation_style'] = Variable<String>(translationStyle.value);
+    }
+    if (lastPageIndex.present) {
+      map['last_page_index'] = Variable<int>(lastPageIndex.value);
+    }
+    if (lastScrollOffset.present) {
+      map['last_scroll_offset'] = Variable<double>(lastScrollOffset.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('fontSize: $fontSize, ')
+          ..write('readingTheme: $readingTheme, ')
+          ..write('isTranslationEnabled: $isTranslationEnabled, ')
+          ..write('translationStyle: $translationStyle, ')
+          ..write('lastPageIndex: $lastPageIndex, ')
+          ..write('lastScrollOffset: $lastScrollOffset, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4713,6 +5283,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $GlossaryTermsTable glossaryTerms = $GlossaryTermsTable(this);
+  late final $BookSettingsTable bookSettings = $BookSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4726,6 +5297,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     highlights,
     translationCache,
     glossaryTerms,
+    bookSettings,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4798,6 +5370,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('glossary_terms', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'books',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('book_settings', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4939,6 +5518,24 @@ final class $$BooksTableReferences
     ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_glossaryTermsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BookSettingsTable, List<BookSetting>>
+  _bookSettingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bookSettings,
+    aliasName: $_aliasNameGenerator(db.books.id, db.bookSettings.bookId),
+  );
+
+  $$BookSettingsTableProcessedTableManager get bookSettingsRefs {
+    final manager = $$BookSettingsTableTableManager(
+      $_db,
+      $_db.bookSettings,
+    ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bookSettingsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -5164,6 +5761,31 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
           }) => $$GlossaryTermsTableFilterComposer(
             $db: $db,
             $table: $db.glossaryTerms,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bookSettingsRefs(
+    Expression<bool> Function($$BookSettingsTableFilterComposer f) f,
+  ) {
+    final $$BookSettingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bookSettings,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BookSettingsTableFilterComposer(
+            $db: $db,
+            $table: $db.bookSettings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5483,6 +6105,31 @@ class $$BooksTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> bookSettingsRefs<T extends Object>(
+    Expression<T> Function($$BookSettingsTableAnnotationComposer a) f,
+  ) {
+    final $$BookSettingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bookSettings,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BookSettingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bookSettings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BooksTableTableManager
@@ -5504,6 +6151,7 @@ class $$BooksTableTableManager
             bool bookmarksRefs,
             bool highlightsRefs,
             bool glossaryTermsRefs,
+            bool bookSettingsRefs,
           })
         > {
   $$BooksTableTableManager(_$AppDatabase db, $BooksTable table)
@@ -5614,6 +6262,7 @@ class $$BooksTableTableManager
                 bookmarksRefs = false,
                 highlightsRefs = false,
                 glossaryTermsRefs = false,
+                bookSettingsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -5623,6 +6272,7 @@ class $$BooksTableTableManager
                     if (bookmarksRefs) db.bookmarks,
                     if (highlightsRefs) db.highlights,
                     if (glossaryTermsRefs) db.glossaryTerms,
+                    if (bookSettingsRefs) db.bookSettings,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -5720,6 +6370,27 @@ class $$BooksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (bookSettingsRefs)
+                        await $_getPrefetchedData<
+                          Book,
+                          $BooksTable,
+                          BookSetting
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._bookSettingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bookSettingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -5746,6 +6417,7 @@ typedef $$BooksTableProcessedTableManager =
         bool bookmarksRefs,
         bool highlightsRefs,
         bool glossaryTermsRefs,
+        bool bookSettingsRefs,
       })
     >;
 typedef $$ChaptersTableCreateCompanionBuilder =
@@ -9154,6 +9826,404 @@ typedef $$GlossaryTermsTableProcessedTableManager =
       GlossaryTerm,
       PrefetchHooks Function({bool bookId})
     >;
+typedef $$BookSettingsTableCreateCompanionBuilder =
+    BookSettingsCompanion Function({
+      Value<int> id,
+      required int bookId,
+      Value<double> fontSize,
+      Value<String> readingTheme,
+      Value<bool> isTranslationEnabled,
+      Value<String> translationStyle,
+      Value<int> lastPageIndex,
+      Value<double> lastScrollOffset,
+      required DateTime updatedAt,
+    });
+typedef $$BookSettingsTableUpdateCompanionBuilder =
+    BookSettingsCompanion Function({
+      Value<int> id,
+      Value<int> bookId,
+      Value<double> fontSize,
+      Value<String> readingTheme,
+      Value<bool> isTranslationEnabled,
+      Value<String> translationStyle,
+      Value<int> lastPageIndex,
+      Value<double> lastScrollOffset,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$BookSettingsTableReferences
+    extends BaseReferences<_$AppDatabase, $BookSettingsTable, BookSetting> {
+  $$BookSettingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BooksTable _bookIdTable(_$AppDatabase db) => db.books.createAlias(
+    $_aliasNameGenerator(db.bookSettings.bookId, db.books.id),
+  );
+
+  $$BooksTableProcessedTableManager get bookId {
+    final $_column = $_itemColumn<int>('book_id')!;
+
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BookSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $BookSettingsTable> {
+  $$BookSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fontSize => $composableBuilder(
+    column: $table.fontSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get readingTheme => $composableBuilder(
+    column: $table.readingTheme,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTranslationEnabled => $composableBuilder(
+    column: $table.isTranslationEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get translationStyle => $composableBuilder(
+    column: $table.translationStyle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastPageIndex => $composableBuilder(
+    column: $table.lastPageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lastScrollOffset => $composableBuilder(
+    column: $table.lastScrollOffset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BooksTableFilterComposer get bookId {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BookSettingsTable> {
+  $$BookSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fontSize => $composableBuilder(
+    column: $table.fontSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get readingTheme => $composableBuilder(
+    column: $table.readingTheme,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isTranslationEnabled => $composableBuilder(
+    column: $table.isTranslationEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get translationStyle => $composableBuilder(
+    column: $table.translationStyle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastPageIndex => $composableBuilder(
+    column: $table.lastPageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lastScrollOffset => $composableBuilder(
+    column: $table.lastScrollOffset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BooksTableOrderingComposer get bookId {
+    final $$BooksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableOrderingComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BookSettingsTable> {
+  $$BookSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get fontSize =>
+      $composableBuilder(column: $table.fontSize, builder: (column) => column);
+
+  GeneratedColumn<String> get readingTheme => $composableBuilder(
+    column: $table.readingTheme,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isTranslationEnabled => $composableBuilder(
+    column: $table.isTranslationEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get translationStyle => $composableBuilder(
+    column: $table.translationStyle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastPageIndex => $composableBuilder(
+    column: $table.lastPageIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get lastScrollOffset => $composableBuilder(
+    column: $table.lastScrollOffset,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BooksTableAnnotationComposer get bookId {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BookSettingsTable,
+          BookSetting,
+          $$BookSettingsTableFilterComposer,
+          $$BookSettingsTableOrderingComposer,
+          $$BookSettingsTableAnnotationComposer,
+          $$BookSettingsTableCreateCompanionBuilder,
+          $$BookSettingsTableUpdateCompanionBuilder,
+          (BookSetting, $$BookSettingsTableReferences),
+          BookSetting,
+          PrefetchHooks Function({bool bookId})
+        > {
+  $$BookSettingsTableTableManager(_$AppDatabase db, $BookSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BookSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BookSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BookSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> bookId = const Value.absent(),
+                Value<double> fontSize = const Value.absent(),
+                Value<String> readingTheme = const Value.absent(),
+                Value<bool> isTranslationEnabled = const Value.absent(),
+                Value<String> translationStyle = const Value.absent(),
+                Value<int> lastPageIndex = const Value.absent(),
+                Value<double> lastScrollOffset = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => BookSettingsCompanion(
+                id: id,
+                bookId: bookId,
+                fontSize: fontSize,
+                readingTheme: readingTheme,
+                isTranslationEnabled: isTranslationEnabled,
+                translationStyle: translationStyle,
+                lastPageIndex: lastPageIndex,
+                lastScrollOffset: lastScrollOffset,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int bookId,
+                Value<double> fontSize = const Value.absent(),
+                Value<String> readingTheme = const Value.absent(),
+                Value<bool> isTranslationEnabled = const Value.absent(),
+                Value<String> translationStyle = const Value.absent(),
+                Value<int> lastPageIndex = const Value.absent(),
+                Value<double> lastScrollOffset = const Value.absent(),
+                required DateTime updatedAt,
+              }) => BookSettingsCompanion.insert(
+                id: id,
+                bookId: bookId,
+                fontSize: fontSize,
+                readingTheme: readingTheme,
+                isTranslationEnabled: isTranslationEnabled,
+                translationStyle: translationStyle,
+                lastPageIndex: lastPageIndex,
+                lastScrollOffset: lastScrollOffset,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BookSettingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bookId,
+                                referencedTable: $$BookSettingsTableReferences
+                                    ._bookIdTable(db),
+                                referencedColumn: $$BookSettingsTableReferences
+                                    ._bookIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BookSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BookSettingsTable,
+      BookSetting,
+      $$BookSettingsTableFilterComposer,
+      $$BookSettingsTableOrderingComposer,
+      $$BookSettingsTableAnnotationComposer,
+      $$BookSettingsTableCreateCompanionBuilder,
+      $$BookSettingsTableUpdateCompanionBuilder,
+      (BookSetting, $$BookSettingsTableReferences),
+      BookSetting,
+      PrefetchHooks Function({bool bookId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9174,4 +10244,6 @@ class $AppDatabaseManager {
       $$TranslationCacheTableTableManager(_db, _db.translationCache);
   $$GlossaryTermsTableTableManager get glossaryTerms =>
       $$GlossaryTermsTableTableManager(_db, _db.glossaryTerms);
+  $$BookSettingsTableTableManager get bookSettings =>
+      $$BookSettingsTableTableManager(_db, _db.bookSettings);
 }

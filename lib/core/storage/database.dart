@@ -146,6 +146,21 @@ class GlossaryTerms extends Table {
 }
 
 // =========================================================
+// 9. BOOK SETTINGS (Per-book reader preferences)
+// =========================================================
+class BookSettings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get bookId => integer().customConstraint('NOT NULL UNIQUE REFERENCES books(id) ON DELETE CASCADE')();
+  RealColumn get fontSize => real().withDefault(const Constant(16.0))();
+  TextColumn get readingTheme => text().withDefault(const Constant('light'))();
+  BoolColumn get isTranslationEnabled => boolean().withDefault(const Constant(false))();
+  TextColumn get translationStyle => text().withDefault(const Constant('natural'))();
+  IntColumn get lastPageIndex => integer().withDefault(const Constant(0))();
+  RealColumn get lastScrollOffset => real().withDefault(const Constant(0.0))();
+  DateTimeColumn get updatedAt => dateTime()();
+}
+
+// =========================================================
 // DATABASE CLASS
 // =========================================================
 @DriftDatabase(tables: [
@@ -157,6 +172,7 @@ class GlossaryTerms extends Table {
   TranslationUnits,
   TranslationCache,
   GlossaryTerms,
+  BookSettings,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -164,7 +180,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -184,10 +200,66 @@ class AppDatabase extends _$AppDatabase {
       // Foreign keys enforcement
       await customStatement('PRAGMA foreign_keys = ON;');
     },
+    onUpgrade: (m, from, to) async {
+      // Schema v1 → v2: Add book_settings table
+      if (from < 2) {
+        await m.createTable(bookSettings);
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
     },
   );
+
+  // ========== BOOK SETTINGS CRUD ==========
+
+  Future<BookSetting?> getBookSetting(int bookId) async {
+    final query = select(bookSettings)..where((t) => t.bookId.equals(bookId));
+    return query.getSingleOrNull();
+  }
+
+  Future<int> upsertBookSetting({
+    required int bookId,
+    double? fontSize,
+    String? readingTheme,
+    bool? isTranslationEnabled,
+    String? translationStyle,
+    int? lastPageIndex,
+    double? lastScrollOffset,
+  }) async {
+    final existing = await getBookSetting(bookId);
+    final now = DateTime.now();
+
+    if (existing != null) {
+      // Update existing
+      final updateQuery = update(bookSettings)..where((t) => t.bookId.equals(bookId));
+      return updateQuery.write(
+        BookSettingsCompanion(
+          fontSize: fontSize != null ? Value(fontSize) : const Value.absent(),
+          readingTheme: readingTheme != null ? Value(readingTheme) : const Value.absent(),
+          isTranslationEnabled: isTranslationEnabled != null ? Value(isTranslationEnabled) : const Value.absent(),
+          translationStyle: translationStyle != null ? Value(translationStyle) : const Value.absent(),
+          lastPageIndex: lastPageIndex != null ? Value(lastPageIndex) : const Value.absent(),
+          lastScrollOffset: lastScrollOffset != null ? Value(lastScrollOffset) : const Value.absent(),
+          updatedAt: Value(now),
+        ),
+      );
+    } else {
+      // Insert new
+      return into(bookSettings).insert(
+        BookSettingsCompanion.insert(
+          bookId: bookId,
+          fontSize: Value(fontSize ?? 16.0),
+          readingTheme: Value(readingTheme ?? 'light'),
+          isTranslationEnabled: Value(isTranslationEnabled ?? false),
+          translationStyle: Value(translationStyle ?? 'natural'),
+          lastPageIndex: Value(lastPageIndex ?? 0),
+          lastScrollOffset: Value(lastScrollOffset ?? 0.0),
+          updatedAt: now,
+        ),
+      );
+    }
+  }
 }
 
 LazyDatabase _openConnection() {

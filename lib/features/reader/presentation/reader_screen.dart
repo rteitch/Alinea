@@ -75,6 +75,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       final chapters = await bookRepo.getChaptersByBookId(widget.bookId);
       final progress = await bookRepo.getReadingProgress(widget.bookId);
 
+      // Load per-book settings
+      final db = ref.read(databaseProvider);
+      final bookSettings = await db.getBookSetting(widget.bookId);
+
       if (mounted) {
         setState(() {
           _book = book;
@@ -83,10 +87,25 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             final idx = chapters.indexWhere((c) => c.id == progress.chapterId);
             _currentChapterIndex = idx >= 0 ? idx : 0;
           }
+          // Apply per-book settings
+          if (bookSettings != null) {
+            _fontSize = bookSettings.fontSize;
+            _isPageTranslated = bookSettings.isTranslationEnabled;
+            _currentPageIndex = bookSettings.lastPageIndex;
+          }
         });
         await _loadCurrentChapterContent();
         await _loadBookmarks();
         await _loadHighlights();
+
+        // Restore scroll position after content is loaded
+        if (bookSettings != null && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (bookSettings.lastScrollOffset > 0 && _scrollController.hasClients) {
+              _scrollController.jumpTo(bookSettings.lastScrollOffset);
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -113,6 +132,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final list = await repo.getHighlightsByBook(widget.bookId);
     if (mounted) {
       setState(() => _highlights = list);
+    }
+  }
+
+  Future<void> _saveBookSettings({
+    double? fontSize,
+    String? readingTheme,
+    bool? isTranslationEnabled,
+    String? translationStyle,
+    int? lastPageIndex,
+    double? lastScrollOffset,
+  }) async {
+    try {
+      final db = ref.read(databaseProvider);
+      await db.upsertBookSetting(
+        bookId: widget.bookId,
+        fontSize: fontSize,
+        readingTheme: readingTheme,
+        isTranslationEnabled: isTranslationEnabled,
+        translationStyle: translationStyle,
+        lastPageIndex: lastPageIndex,
+        lastScrollOffset: lastScrollOffset,
+      );
+    } catch (e) {
+      debugPrint('[ReaderScreen] Failed to save book settings: $e');
     }
   }
 
@@ -210,6 +253,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       chapterId: currentChapter.id,
       scrollPct: pct,
     );
+
+    // Save exact scroll offset for restoration
+    _saveBookSettings(lastScrollOffset: currentScroll);
   }
 
   Future<void> _goToChapter(int index) async {
@@ -612,6 +658,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _translationProgress = 0.0;
         _translatedPageText = '';
       });
+      _saveBookSettings(isTranslationEnabled: false);
       return;
     }
 
@@ -621,6 +668,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _isPageTranslated = false;
         _translatedPageText = '';
       });
+      _saveBookSettings(isTranslationEnabled: false);
       return;
     }
 
@@ -739,6 +787,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           _translatedPageText = translatedParagraphs.join('\n\n');
           _isPageTranslated = true;
         });
+        _saveBookSettings(isTranslationEnabled: true);
       }
     }
 
@@ -749,6 +798,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         _translationProgress = 1.0;
         _translatedPageText = translatedParagraphs.join('\n\n');
       });
+      _saveBookSettings(isTranslationEnabled: true);
       
       // Show feedback if there were failures — include actual error message
       if (totalFailures > 0 && mounted) {
@@ -795,6 +845,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                           onChanged: (val) {
                             setSheetState(() => _fontSize = val);
                             setState(() => _fontSize = val);
+                            _saveBookSettings(fontSize: val);
                           },
                         ),
                       ),
