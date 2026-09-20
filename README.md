@@ -20,6 +20,12 @@
   <img src="https://img.shields.io/badge/License-MIT%20%2F%20FOSS-blue?style=for-the-badge" alt="License" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk">
+    <img src="https://img.shields.io/badge/Download-APK%20v1.0.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+  </a>
+</p>
+
 > **Alinea** (derived from the word for *paragraph*) is a modern, privacy-respecting digital book reader (EPUB) for Android. It bridges long-form reading with instantaneous, in-place machine translation powered by open-source translation engines (**LibreTranslate + Argos Translate**).
 
 Unlike conventional reader applications that require clumsy copy-pasting to external translator apps or charge recurring per-character fees via proprietary cloud APIs, Alinea delivers a **zero marginal cost ($0)** experience with robust offline-first caching, scoped terminology locking, and an elegant distraction-free reading environment.
@@ -27,6 +33,7 @@ Unlike conventional reader applications that require clumsy copy-pasting to exte
 ---
 
 ## 📑 Table of Contents
+- [Download APK](#-download-apk)
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
   - [End-to-End Translation Pipeline](#end-to-end-translation-pipeline)
@@ -43,6 +50,16 @@ Unlike conventional reader applications that require clumsy copy-pasting to exte
 - [Project Directory Structure](#-project-directory-structure)
 - [Product Roadmap](#-product-roadmap)
 - [License](#-license)
+
+---
+
+## 📥 Download APK
+
+| Platform | Link |
+|---|---|
+| **Android** | [**Download app-release.apk (v1.0.0)**](https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk) |
+
+> **Requirements:** Android 7.0+ (API 24+). For translation features, deploy the backend gateway ([see below](#3-deploying-the-translation-gateway)).
 
 ---
 
@@ -219,7 +236,7 @@ Alinea enforces rigorous automated testing aligned with **ISTQB (International S
 ✅ Flutter Client Tests:  48 / 48 passed (100%)
 ✅ Static Analysis:       0 Errors, 0 Warnings, 0 Lints (dart analyze)
 ✅ FastAPI Backend Tests: 4 / 4 passed (pytest)
-✅ Android Release Build: 59.2 MB standalone APK compiled
+✅ Android Release Build: 59.6 MB standalone APK compiled
 ```
 
 ---
