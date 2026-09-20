@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/storage/database.dart';
@@ -303,5 +305,28 @@ class BookRepository {
       'books': booksData,
       'glossary': glossaryData,
     };
+  }
+
+  /// Backup the entire SQLite database to a file
+  Future<void> backupDatabase(String destinationPath) async {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbFile = File(p.join(dbFolder.path, 'alinea.sqlite'));
+    if (!await dbFile.exists()) {
+      throw Exception('File database tidak ditemukan');
+    }
+    await dbFile.copy(destinationPath);
+  }
+
+  /// Restore database from a backup file (requires app restart)
+  Future<void> restoreDatabase(String sourcePath) async {
+    final sourceFile = File(sourcePath);
+    if (!await sourceFile.exists()) {
+      throw Exception('File backup tidak ditemukan');
+    }
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final dbFile = File(p.join(dbFolder.path, 'alinea.sqlite'));
+    // Close current connection, overwrite file
+    await db.close();
+    await sourceFile.copy(dbFile.path);
   }
 }
