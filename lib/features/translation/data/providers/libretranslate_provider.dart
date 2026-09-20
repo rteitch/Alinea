@@ -31,6 +31,8 @@ class LibreTranslateProvider implements TranslationProvider {
 
   String _normalizeLang(String lang) {
     final clean = lang.trim().toLowerCase();
+    // Handle undefined/undetermined language codes
+    if (clean.isEmpty || clean == 'und' || clean == 'mis' || clean == 'zxx' || clean == 'mul') return 'en';
     const iso3To2 = {
       'eng': 'en',
       'ind': 'id',
@@ -43,6 +45,9 @@ class LibreTranslateProvider implements TranslationProvider {
       'chi': 'zh',
       'jpn': 'ja',
       'ara': 'ar',
+      'rus': 'ru',
+      'ita': 'it',
+      'por': 'pt',
       'kor': 'ko',
     };
     if (iso3To2.containsKey(clean)) return iso3To2[clean]!;
@@ -157,8 +162,18 @@ class LibreTranslateProvider implements TranslationProvider {
     final code = e.response?.statusCode;
     final data = e.response?.data;
 
+    // Extract from standard error key
     if (data is Map && data.containsKey('error') && data['error'] != null) {
       return data['error'].toString();
+    }
+    // Extract from FastAPI 'detail' key (our backend uses this)
+    if (data is Map && data.containsKey('detail') && data['detail'] != null) {
+      final detail = data['detail'].toString();
+      // Strip prefix if it contains "LibreTranslate inference error:"
+      if (detail.startsWith('LibreTranslate inference error:')) {
+        return detail.replaceFirst('LibreTranslate inference error:', '').trim();
+      }
+      return detail;
     }
     if (data is String && data.isNotEmpty && !data.contains('<!DOCTYPE') && !data.contains('<html')) {
       return data;

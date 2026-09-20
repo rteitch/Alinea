@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
@@ -821,7 +820,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -849,7 +848,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 sub,
                 style: TextStyle(
                   fontSize: 9,
-                  color: textColor.withValues(alpha: 0.75),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

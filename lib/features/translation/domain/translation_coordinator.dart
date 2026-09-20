@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/errors/failures.dart';
 import '../../glossary/data/glossary_repository.dart';
 import '../data/translation_cache_repository.dart';
@@ -111,9 +112,12 @@ class TranslationCoordinator {
 
       return result;
     } catch (e) {
+      debugPrint('[TranslationCoordinator] Primary provider (${activeProvider.id}) failed: $e');
+      
       // Automatic Fallback to FOSS Cloud if active provider encounters error/unreachable
       if (fallbackProvider != null && activeProvider.id != fallbackProvider!.id) {
         try {
+          debugPrint('[TranslationCoordinator] Trying fallback provider (${fallbackProvider!.id})...');
           final fallbackResult = await fallbackProvider!.translate(
             text: trimmed,
             sourceLanguage: sourceLanguage,
@@ -131,8 +135,10 @@ class TranslationCoordinator {
             style: style,
           );
 
+          debugPrint('[TranslationCoordinator] Fallback provider succeeded');
           return fallbackResult;
-        } catch (_) {
+        } catch (fallbackError) {
+          debugPrint('[TranslationCoordinator] Fallback provider also failed: $fallbackError');
           // If fallback also fails, continue to rethrow original error
         }
       }

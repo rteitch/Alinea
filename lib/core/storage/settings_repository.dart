@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AppSettings {
@@ -89,7 +90,8 @@ class SettingsRepository {
           return AppSettings.fromJson(json);
         }
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SettingsRepository] Failed to load settings: $e');
       // Fallback to default on error
     }
     return const AppSettings();
@@ -99,7 +101,9 @@ class SettingsRepository {
     try {
       final file = await _getFile();
       await file.writeAsString(jsonEncode(settings.toJson()), flush: true);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SettingsRepository] Failed to save settings: $e');
+    }
   }
 
   /// Pings the specified gateway URL to test connectivity

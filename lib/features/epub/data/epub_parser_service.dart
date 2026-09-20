@@ -238,6 +238,39 @@ class EpubParserService {
       }
     }
 
+    // 6b. EPUB 3 Navigation Document (nav.xhtml) support
+    if (tocList.isEmpty) {
+      // Look for nav.xhtml in manifest (properties="nav")
+      for (final entry in manifestMap.entries) {
+        if (entry.value.properties?.contains('nav') == true) {
+          final navPath = _resolvePath(opfDir, entry.value.href);
+          final navFile = archive.findFile(navPath);
+          if (navFile != null) {
+            try {
+              final navHtml = utf8.decode(navFile.content as List<int>);
+              final navDoc = XmlDocument.parse(navHtml);
+              // Find <nav epub:type="toc"> or <nav> element
+              final navElements = navDoc.findAllElements('nav');
+              for (final nav in navElements) {
+                final epubType = nav.getAttribute('epub:type') ?? '';
+                if (epubType.contains('toc') || navElements.length == 1) {
+                  // Parse the nested <ol> list
+                  final olElements = nav.findAllElements('ol');
+                  if (olElements.isNotEmpty) {
+                    tocList.addAll(_parseNavOlElements(olElements.first));
+                  }
+                  break;
+                }
+              }
+            } catch (_) {
+              // Graceful fallback if nav.xhtml is malformed
+            }
+          }
+          break;
+        }
+      }
+    }
+
     // 7. Parse chapters according to spine sequence
     final chapters = <EpubChapterItem>[];
     final tocHrefMap = <String, int>{};
@@ -317,6 +350,39 @@ class EpubParserService {
         counter++;
       }
     }
+    return result;
+  }
+
+  /// Parse EPUB 3 navigation document (nav.xhtml) <ol> structure
+  List<EpubTocItem> _parseNavOlElements(XmlElement olElement, [int depth = 0]) {
+    final result = <EpubTocItem>[];
+    var counter = 1;
+    
+    for (final li in olElement.children.whereType<XmlElement>()) {
+      if (li.name.local != 'li') continue;
+      
+      final aElement = li.findAllElements('a').firstOrNull;
+      final spanElement = li.findAllElements('span').firstOrNull;
+      
+      final label = aElement?.innerText.trim() ?? spanElement?.innerText.trim() ?? 'Untitled Section';
+      final href = aElement?.getAttribute('href') ?? '';
+      
+      // Parse nested <ol> for sub-chapters
+      final nestedOl = li.findAllElements('ol').firstOrNull;
+      final children = nestedOl != null ? _parseNavOlElements(nestedOl, depth + 1) : <EpubTocItem>[];
+      
+      result.add(
+        EpubTocItem(
+          id: 'nav-$depth-$counter',
+          title: label,
+          href: href,
+          order: counter + depth * 100,
+          children: children,
+        ),
+      );
+      counter++;
+    }
+    
     return result;
   }
 

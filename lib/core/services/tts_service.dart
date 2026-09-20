@@ -25,7 +25,11 @@ class TtsService {
     });
 
     _flutterTts.setCompletionHandler(() {
-      // Completion is also handled at loop end
+      // Update state when TTS engine finishes speaking
+      if (_state == TtsState.playing) {
+        _state = TtsState.stopped;
+        onStateChanged?.call(_state);
+      }
     });
 
     _flutterTts.setPauseHandler(() {
@@ -162,6 +166,8 @@ class TtsService {
 
   void dispose() {
     _currentSpeakId++;
+    _state = TtsState.stopped;
+    onStateChanged?.call(_state);
     _flutterTts.stop();
   }
 }

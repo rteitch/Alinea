@@ -55,6 +55,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
   String _ttsError = '';
   String _style = 'natural'; // 'natural', 'literal', 'academic'
   late String _activeTargetLang;
+  int _translationRequestId = 0; // For cancelling overlapping translations
 
   // Own a private TTS instance so it doesn't conflict with the reader's TTS
   final FlutterTts _tts = FlutterTts();
@@ -89,11 +90,15 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
 
   @override
   void dispose() {
+    _translationRequestId++; // Cancel any ongoing translation
     _tts.stop();
     super.dispose();
   }
 
   Future<void> _performTranslation() async {
+    // Cancel any previous translation
+    final requestId = ++_translationRequestId;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -109,6 +114,9 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
         style: _style,
       );
 
+      // Check if this request was cancelled
+      if (requestId != _translationRequestId) return;
+      
       if (mounted) {
         setState(() {
           _translatedText = result.translatedText;
@@ -117,6 +125,9 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
         });
       }
     } catch (e) {
+      // Check if this request was cancelled
+      if (requestId != _translationRequestId) return;
+      
       if (mounted) {
         // Strip exception class prefix for clean display
         String rawMsg = e.toString();
@@ -215,7 +226,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -244,9 +255,9 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: activeProvider.isFoss ? Colors.green.shade50 : Colors.amber.shade50,
+                  color: activeProvider.isFoss ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.secondaryContainer,
                   border: Border.all(
-                    color: activeProvider.isFoss ? Colors.green.shade400 : Colors.amber.shade400,
+                    color: activeProvider.isFoss ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                   ),
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -256,7 +267,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                     Icon(
                       activeProvider.isFoss ? Icons.verified_user_outlined : Icons.info_outline,
                       size: 13,
-                      color: activeProvider.isFoss ? Colors.green.shade800 : Colors.amber.shade900,
+                      color: activeProvider.isFoss ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -264,7 +275,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: activeProvider.isFoss ? Colors.green.shade800 : Colors.amber.shade900,
+                        color: activeProvider.isFoss ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
                       ),
                     ),
                   ],
@@ -281,7 +292,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
               children: [
                 Text(
                   'Gaya Terjemahan:',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
@@ -343,7 +354,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -385,12 +396,12 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
+                                  color: Theme.of(context).colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
                                   'Cache Lokal (< 200ms)',
-                                  style: TextStyle(fontSize: 9, color: Colors.blue.shade900),
+                                  style: TextStyle(fontSize: 9, color: Theme.of(context).colorScheme.primary),
                                 ),
                               ),
                           ],
@@ -420,7 +431,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                             children: [
                               Text(
                                 _errorMessage!,
-                                style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+                                style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13),
                               ),
                               const SizedBox(height: 6),
                               Row(
@@ -446,9 +457,28 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                               ),
                             ],
                           )
+                        else if (_translatedText == null || _translatedText!.trim().isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.info_outline, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Tidak ada terjemahan tersedia',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                         else
                           SelectableText(
-                            _translatedText ?? '',
+                            _translatedText!,
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w500,
@@ -473,7 +503,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     '⚠️ $_ttsError',
-                    style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+                    style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.error),
                   ),
                 ),
               Row(
@@ -485,7 +515,7 @@ class _TranslationOverlayState extends ConsumerState<TranslationOverlay> {
                         icon: Icon(
                           _isSpeaking ? Icons.stop_circle_rounded : Icons.volume_up_rounded,
                           size: 16,
-                          color: _isSpeaking ? Colors.red : null,
+                          color: _isSpeaking ? Theme.of(context).colorScheme.error : null,
                         ),
                         label: Text(_isSpeaking ? 'Berhenti' : 'Dengarkan'),
                         onPressed: _translatedText != null

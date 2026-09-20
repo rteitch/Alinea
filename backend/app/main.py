@@ -76,6 +76,9 @@ def normalize_language_code(code: str) -> str:
     if not code:
         return "en"
     clean = code.strip().lower()
+    # Handle undefined/undetermined language codes
+    if clean in ('und', 'mis', 'zxx', 'mul', ''):
+        return "en"
     if clean in ISO_639_2_MAP:
         return ISO_639_2_MAP[clean]
     # Strip subtag like en-US, en_US, en-GB -> en

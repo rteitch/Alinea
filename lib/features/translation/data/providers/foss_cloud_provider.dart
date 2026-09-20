@@ -74,13 +74,21 @@ class FossCloudProvider implements TranslationProvider {
         );
       }
 
-      // If text is long, split by sentences to respect 500-char API limit and translate concurrently
+      // If text is long, split by sentences to respect 500-char API limit
+      // Translate in batches of 3 to avoid overwhelming the device/network
       final sentences = _splitSentences(trimmed);
-      final results = await Future.wait(
-        sentences.where((s) => s.trim().isNotEmpty).map(
-          (s) => _fetchChunk(s.trim(), normSource, normTarget),
-        ),
-      );
+      final results = <String>[];
+      
+      const batchSize = 3;
+      for (var i = 0; i < sentences.length; i += batchSize) {
+        final batch = sentences.skip(i).take(batchSize).where((s) => s.trim().isNotEmpty).toList();
+        if (batch.isEmpty) continue;
+        
+        final batchResults = await Future.wait(
+          batch.map((s) => _fetchChunk(s.trim(), normSource, normTarget)),
+        );
+        results.addAll(batchResults);
+      }
 
       final combined = results.join(' ');
       return TranslationResult(
@@ -149,12 +157,66 @@ class FossCloudProvider implements TranslationProvider {
   }
 
   List<String> _splitSentences(String text) {
+    // Improved sentence splitting that handles:
+    // - Abbreviations (Mr., Mrs., Dr., etc.)
+    // - Numbers (3.14, 1.5, etc.)
+    // - Ellipsis (...)
+    // - Multiple punctuation (!?, etc.)
+    
+    // First, protect common patterns that shouldn't be split
+    var protectedText = text;
+    final protectionPatterns = [
+      RegExp(r'Mr\.', caseSensitive: false),
+      RegExp(r'Mrs\.', caseSensitive: false),
+      RegExp(r'Ms\.', caseSensitive: false),
+      RegExp(r'Dr\.', caseSensitive: false),
+      RegExp(r'Prof\.', caseSensitive: false),
+      RegExp(r'Sr\.', caseSensitive: false),
+      RegExp(r'Jr\.', caseSensitive: false),
+      RegExp(r'\d+\.\d+'), // Numbers like 3.14
+      RegExp(r'\.{3}'), // Ellipsis
+    ];
+    
+    // Replace protected patterns with placeholders
+    final placeholders = <String, String>{};
+    var counter = 0;
+    
+    // First, collect ALL matches across all patterns
+    final allMatches = <_MatchInfo>[];
+    for (final pattern in protectionPatterns) {
+      for (final match in pattern.allMatches(protectedText)) {
+        allMatches.add(_MatchInfo(match.start, match.end, match.group(0)!));
+      }
+    }
+    
+    // Sort by position (descending) to replace from end to start
+    allMatches.sort((a, b) => b.start.compareTo(a.start));
+    
+    // Replace from end to start to preserve positions
+    for (final matchInfo in allMatches) {
+      final placeholder = '\x00${counter++}\x00';
+      placeholders[placeholder] = matchInfo.text;
+      protectedText = protectedText.replaceRange(matchInfo.start, matchInfo.end, placeholder);
+    }
+    
+    // Split on sentence boundaries
     final pattern = RegExp(r'(?<=[.!?])\s+');
-    final parts = text.split(pattern);
+    final parts = protectedText.split(pattern);
+    
+    // Restore protected patterns
+    final restoredParts = <String>[];
+    for (var part in parts) {
+      for (final entry in placeholders.entries) {
+        part = part.replaceAll(entry.key, entry.value);
+      }
+      restoredParts.add(part);
+    }
+    
+    // Now chunk the sentences into groups of ~400 chars
     final chunks = <String>[];
     var current = StringBuffer();
-
-    for (final p in parts) {
+    
+    for (final p in restoredParts) {
       if (current.length + p.length > 400 && current.isNotEmpty) {
         chunks.add(current.toString().trim());
         current = StringBuffer();
@@ -162,11 +224,11 @@ class FossCloudProvider implements TranslationProvider {
       if (current.isNotEmpty) current.write(' ');
       current.write(p);
     }
-
+    
     if (current.isNotEmpty) {
       chunks.add(current.toString().trim());
     }
-
+    
     return chunks.isNotEmpty ? chunks : [text];
   }
 
@@ -182,6 +244,8 @@ class FossCloudProvider implements TranslationProvider {
 
   String _normalizeLang(String lang) {
     final clean = lang.trim().toLowerCase();
+    // Handle undefined/undetermined language codes
+    if (clean.isEmpty || clean == 'und' || clean == 'mis' || clean == 'zxx' || clean == 'mul') return 'en';
     const iso3To2 = {
       'eng': 'en',
       'ind': 'id',
@@ -205,4 +269,13 @@ class FossCloudProvider implements TranslationProvider {
   Future<LanguageDetectionResult> detectLanguage(String text) async {
     return const LanguageDetectionResult(detectedLanguage: 'en', confidence: 0.9);
   }
+}
+
+/// Helper class to store match position information
+class _MatchInfo {
+  final int start;
+  final int end;
+  final String text;
+  
+  const _MatchInfo(this.start, this.end, this.text);
 }
