@@ -22,7 +22,7 @@
 
 <p align="center">
   <a href="https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk">
-    <img src="https://img.shields.io/badge/Download-APK%20v1.4.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+    <img src="https://img.shields.io/badge/Download-APK%20v1.4.1-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
   </a>
 </p>
 
@@ -57,7 +57,7 @@ Unlike conventional reader applications that require clumsy copy-pasting to exte
 
 | Platform | Link |
 |---|---|
-| **Android** | [**Download app-release.apk (v1.4.0)**](https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk) |
+| **Android** | [**Download app-release.apk (v1.4.1)**](https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk) |
 
 > **Requirements:** Android 7.0+ (API 24+). For translation features, deploy the backend gateway ([see below](#3-deploying-the-translation-gateway)).
 
