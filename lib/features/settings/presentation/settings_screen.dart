@@ -4,6 +4,7 @@ import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
+import 'about_screen.dart';
 import 'language_picker_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -883,6 +884,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          // Data Management
+          const Text('Manajemen Data', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.upload_file_rounded),
+                  title: const Text('Ekspor Data'),
+                  subtitle: const Text('Simpan data perpustakaan ke file JSON'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () async {
+                    try {
+                      final repo = ref.read(bookRepositoryProvider);
+                      final data = await repo.exportLibraryData();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Data diekspor (${data['books'].length} buku, ${data['glossary'].length} istilah)'),
+                            backgroundColor: Colors.green.shade700,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal ekspor: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('Tentang Alinea'),
+                  subtitle: const Text('Versi, lisensi, dan tautan'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // About Section with App Logo
           Center(

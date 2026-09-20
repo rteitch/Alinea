@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers.dart';
 import 'theme/app_theme.dart';
-import '../features/library/presentation/library_screen.dart';
+import '../features/splash/presentation/splash_screen.dart';
 
 class AlineaApp extends ConsumerWidget {
   const AlineaApp({super.key});
@@ -31,7 +31,7 @@ class AlineaApp extends ConsumerWidget {
       title: 'Alinea',
       debugShowCheckedModeBanner: false,
       theme: theme,
-      home: const LibraryScreen(),
+      home: const SplashScreen(),
     );
   }
 }

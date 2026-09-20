@@ -272,4 +272,36 @@ class BookRepository {
     final totalChapters = chapters.length;
     return ((chapterIdx + progress.scrollPct) / totalChapters).clamp(0.0, 1.0);
   }
+
+  /// Export all library metadata to a JSON map
+  Future<Map<String, dynamic>> exportLibraryData() async {
+    final books = await db.select(db.books).get();
+    final booksData = books.map((b) => {
+      'title': b.title,
+      'author': b.author,
+      'publisher': b.publisher,
+      'sourceLanguage': b.sourceLanguage,
+      'isbn': b.isbn,
+      'readingStatus': b.readingStatus,
+      'isFavorite': b.isFavorite,
+      'addedAt': b.addedAt.toIso8601String(),
+      'lastOpenedAt': b.lastOpenedAt?.toIso8601String(),
+    }).toList();
+
+    final terms = await db.select(db.glossaryTerms).get();
+    final glossaryData = terms.map((t) => {
+      'sourceTerm': t.sourceTerm,
+      'preferredTranslation': t.preferredTranslation,
+      'sourceLanguage': t.sourceLanguage,
+      'targetLanguage': t.targetLanguage,
+      'bookId': t.bookId,
+    }).toList();
+
+    return {
+      'version': '1.0',
+      'exportedAt': DateTime.now().toIso8601String(),
+      'books': booksData,
+      'glossary': glossaryData,
+    };
+  }
 }
