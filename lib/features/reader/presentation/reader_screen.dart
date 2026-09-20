@@ -42,6 +42,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   bool _isAudioPlaying = false;
   double _speechRate = 0.5;
 
+  // Font family state
+  String _fontFamily = 'default';
+
   // Bookmarks & Highlights
   List<Bookmark> _bookmarks = [];
   List<Highlight> _highlights = [];
@@ -95,6 +98,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
             _fontSize = bookSettings.fontSize;
             _isPageTranslated = bookSettings.isTranslationEnabled;
             _currentPageIndex = bookSettings.lastPageIndex;
+            _fontFamily = bookSettings.fontFamily;
             // Restore per-book theme
             _currentTheme = ReadingThemeMode.values.firstWhere(
               (t) => t.name == bookSettings.readingTheme,
@@ -149,6 +153,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     String? readingTheme,
     bool? isTranslationEnabled,
     String? translationStyle,
+    String? fontFamily,
     int? lastPageIndex,
     double? lastScrollOffset,
   }) async {
@@ -160,6 +165,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         readingTheme: readingTheme,
         isTranslationEnabled: isTranslationEnabled,
         translationStyle: translationStyle,
+        fontFamily: fontFamily,
         lastPageIndex: lastPageIndex,
         lastScrollOffset: lastScrollOffset,
       );
@@ -880,6 +886,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         return ReadingThemeMode.amoled;
       case ReadingThemeMode.amoled:
         return ReadingThemeMode.light;
+      case ReadingThemeMode.system:
+        return ReadingThemeMode.light;
     }
   }
 
@@ -893,6 +901,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         return Icons.dark_mode_rounded;
       case ReadingThemeMode.amoled:
         return Icons.brightness_1_rounded;
+      case ReadingThemeMode.system:
+        return Icons.brightness_auto_rounded;
     }
   }
 
@@ -906,6 +916,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         return 'Dark';
       case ReadingThemeMode.amoled:
         return 'AMOLED';
+      case ReadingThemeMode.system:
+        return 'Sistem';
     }
   }
 
@@ -1113,6 +1125,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  // Font Family Selection
+                  const Text('Jenis Huruf:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildFontChip('Default', 'default'),
+                      _buildFontChip('Serif', 'serif'),
+                      _buildFontChip('Sans-Serif', 'sans'),
+                      _buildFontChip('Monospace', 'mono'),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             );
@@ -1146,6 +1172,31 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildFontChip(String label, String value) {
+    final isSelected = _fontFamily == value;
+    return FilterChip(
+      label: Text(label, style: TextStyle(fontSize: 12, fontFamily: _getFontFamily(value))),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() => _fontFamily = value);
+        _saveBookSettings(fontFamily: value);
+      },
+    );
+  }
+
+  String _getFontFamily(String value) {
+    switch (value) {
+      case 'serif':
+        return 'serif';
+      case 'sans':
+        return 'sans-serif';
+      case 'mono':
+        return 'monospace';
+      default:
+        return '';
+    }
   }
 
   Widget _buildHighlightedContent(String text, TextStyle baseStyle) {
@@ -1797,9 +1848,19 @@ color: _isPageTranslated ? Theme.of(context).colorScheme.primary : null,
             ),
         ],
       ),
-      bottomNavigationBar: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Chapter progress bar
+          LinearProgressIndicator(
+            value: _chapters.isEmpty ? 0 : (_currentChapterIndex + 1) / _chapters.length,
+            minHeight: 2.5,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           boxShadow: [
@@ -1883,6 +1944,8 @@ color: _isPageTranslated ? Theme.of(context).colorScheme.primary : null,
                   ),
                 ],
               ),
+          ),
+        ],
       ),
     );
   }

@@ -4820,6 +4820,18 @@ class $BookSettingsTable extends BookSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('natural'),
   );
+  static const VerificationMeta _fontFamilyMeta = const VerificationMeta(
+    'fontFamily',
+  );
+  @override
+  late final GeneratedColumn<String> fontFamily = GeneratedColumn<String>(
+    'font_family',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('default'),
+  );
   static const VerificationMeta _lastPageIndexMeta = const VerificationMeta(
     'lastPageIndex',
   );
@@ -4863,6 +4875,7 @@ class $BookSettingsTable extends BookSettings
     readingTheme,
     isTranslationEnabled,
     translationStyle,
+    fontFamily,
     lastPageIndex,
     lastScrollOffset,
     updatedAt,
@@ -4921,6 +4934,12 @@ class $BookSettingsTable extends BookSettings
           data['translation_style']!,
           _translationStyleMeta,
         ),
+      );
+    }
+    if (data.containsKey('font_family')) {
+      context.handle(
+        _fontFamilyMeta,
+        fontFamily.isAcceptableOrUnknown(data['font_family']!, _fontFamilyMeta),
       );
     }
     if (data.containsKey('last_page_index')) {
@@ -4982,6 +5001,10 @@ class $BookSettingsTable extends BookSettings
         DriftSqlType.string,
         data['${effectivePrefix}translation_style'],
       )!,
+      fontFamily: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}font_family'],
+      )!,
       lastPageIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}last_page_index'],
@@ -5010,6 +5033,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
   final String readingTheme;
   final bool isTranslationEnabled;
   final String translationStyle;
+  final String fontFamily;
   final int lastPageIndex;
   final double lastScrollOffset;
   final DateTime updatedAt;
@@ -5020,6 +5044,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     required this.readingTheme,
     required this.isTranslationEnabled,
     required this.translationStyle,
+    required this.fontFamily,
     required this.lastPageIndex,
     required this.lastScrollOffset,
     required this.updatedAt,
@@ -5033,6 +5058,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     map['reading_theme'] = Variable<String>(readingTheme);
     map['is_translation_enabled'] = Variable<bool>(isTranslationEnabled);
     map['translation_style'] = Variable<String>(translationStyle);
+    map['font_family'] = Variable<String>(fontFamily);
     map['last_page_index'] = Variable<int>(lastPageIndex);
     map['last_scroll_offset'] = Variable<double>(lastScrollOffset);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -5047,6 +5073,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       readingTheme: Value(readingTheme),
       isTranslationEnabled: Value(isTranslationEnabled),
       translationStyle: Value(translationStyle),
+      fontFamily: Value(fontFamily),
       lastPageIndex: Value(lastPageIndex),
       lastScrollOffset: Value(lastScrollOffset),
       updatedAt: Value(updatedAt),
@@ -5067,6 +5094,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
         json['isTranslationEnabled'],
       ),
       translationStyle: serializer.fromJson<String>(json['translationStyle']),
+      fontFamily: serializer.fromJson<String>(json['fontFamily']),
       lastPageIndex: serializer.fromJson<int>(json['lastPageIndex']),
       lastScrollOffset: serializer.fromJson<double>(json['lastScrollOffset']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -5082,6 +5110,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       'readingTheme': serializer.toJson<String>(readingTheme),
       'isTranslationEnabled': serializer.toJson<bool>(isTranslationEnabled),
       'translationStyle': serializer.toJson<String>(translationStyle),
+      'fontFamily': serializer.toJson<String>(fontFamily),
       'lastPageIndex': serializer.toJson<int>(lastPageIndex),
       'lastScrollOffset': serializer.toJson<double>(lastScrollOffset),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -5095,6 +5124,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     String? readingTheme,
     bool? isTranslationEnabled,
     String? translationStyle,
+    String? fontFamily,
     int? lastPageIndex,
     double? lastScrollOffset,
     DateTime? updatedAt,
@@ -5105,6 +5135,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     readingTheme: readingTheme ?? this.readingTheme,
     isTranslationEnabled: isTranslationEnabled ?? this.isTranslationEnabled,
     translationStyle: translationStyle ?? this.translationStyle,
+    fontFamily: fontFamily ?? this.fontFamily,
     lastPageIndex: lastPageIndex ?? this.lastPageIndex,
     lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -5123,6 +5154,9 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       translationStyle: data.translationStyle.present
           ? data.translationStyle.value
           : this.translationStyle,
+      fontFamily: data.fontFamily.present
+          ? data.fontFamily.value
+          : this.fontFamily,
       lastPageIndex: data.lastPageIndex.present
           ? data.lastPageIndex.value
           : this.lastPageIndex,
@@ -5142,6 +5176,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
           ..write('readingTheme: $readingTheme, ')
           ..write('isTranslationEnabled: $isTranslationEnabled, ')
           ..write('translationStyle: $translationStyle, ')
+          ..write('fontFamily: $fontFamily, ')
           ..write('lastPageIndex: $lastPageIndex, ')
           ..write('lastScrollOffset: $lastScrollOffset, ')
           ..write('updatedAt: $updatedAt')
@@ -5157,6 +5192,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     readingTheme,
     isTranslationEnabled,
     translationStyle,
+    fontFamily,
     lastPageIndex,
     lastScrollOffset,
     updatedAt,
@@ -5171,6 +5207,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
           other.readingTheme == this.readingTheme &&
           other.isTranslationEnabled == this.isTranslationEnabled &&
           other.translationStyle == this.translationStyle &&
+          other.fontFamily == this.fontFamily &&
           other.lastPageIndex == this.lastPageIndex &&
           other.lastScrollOffset == this.lastScrollOffset &&
           other.updatedAt == this.updatedAt);
@@ -5183,6 +5220,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
   final Value<String> readingTheme;
   final Value<bool> isTranslationEnabled;
   final Value<String> translationStyle;
+  final Value<String> fontFamily;
   final Value<int> lastPageIndex;
   final Value<double> lastScrollOffset;
   final Value<DateTime> updatedAt;
@@ -5193,6 +5231,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     this.readingTheme = const Value.absent(),
     this.isTranslationEnabled = const Value.absent(),
     this.translationStyle = const Value.absent(),
+    this.fontFamily = const Value.absent(),
     this.lastPageIndex = const Value.absent(),
     this.lastScrollOffset = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -5204,6 +5243,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     this.readingTheme = const Value.absent(),
     this.isTranslationEnabled = const Value.absent(),
     this.translationStyle = const Value.absent(),
+    this.fontFamily = const Value.absent(),
     this.lastPageIndex = const Value.absent(),
     this.lastScrollOffset = const Value.absent(),
     required DateTime updatedAt,
@@ -5216,6 +5256,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     Expression<String>? readingTheme,
     Expression<bool>? isTranslationEnabled,
     Expression<String>? translationStyle,
+    Expression<String>? fontFamily,
     Expression<int>? lastPageIndex,
     Expression<double>? lastScrollOffset,
     Expression<DateTime>? updatedAt,
@@ -5228,6 +5269,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
       if (isTranslationEnabled != null)
         'is_translation_enabled': isTranslationEnabled,
       if (translationStyle != null) 'translation_style': translationStyle,
+      if (fontFamily != null) 'font_family': fontFamily,
       if (lastPageIndex != null) 'last_page_index': lastPageIndex,
       if (lastScrollOffset != null) 'last_scroll_offset': lastScrollOffset,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -5241,6 +5283,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     Value<String>? readingTheme,
     Value<bool>? isTranslationEnabled,
     Value<String>? translationStyle,
+    Value<String>? fontFamily,
     Value<int>? lastPageIndex,
     Value<double>? lastScrollOffset,
     Value<DateTime>? updatedAt,
@@ -5252,6 +5295,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
       readingTheme: readingTheme ?? this.readingTheme,
       isTranslationEnabled: isTranslationEnabled ?? this.isTranslationEnabled,
       translationStyle: translationStyle ?? this.translationStyle,
+      fontFamily: fontFamily ?? this.fontFamily,
       lastPageIndex: lastPageIndex ?? this.lastPageIndex,
       lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -5281,6 +5325,9 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     if (translationStyle.present) {
       map['translation_style'] = Variable<String>(translationStyle.value);
     }
+    if (fontFamily.present) {
+      map['font_family'] = Variable<String>(fontFamily.value);
+    }
     if (lastPageIndex.present) {
       map['last_page_index'] = Variable<int>(lastPageIndex.value);
     }
@@ -5302,6 +5349,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
           ..write('readingTheme: $readingTheme, ')
           ..write('isTranslationEnabled: $isTranslationEnabled, ')
           ..write('translationStyle: $translationStyle, ')
+          ..write('fontFamily: $fontFamily, ')
           ..write('lastPageIndex: $lastPageIndex, ')
           ..write('lastScrollOffset: $lastScrollOffset, ')
           ..write('updatedAt: $updatedAt')
@@ -10466,6 +10514,7 @@ typedef $$BookSettingsTableCreateCompanionBuilder =
       Value<String> readingTheme,
       Value<bool> isTranslationEnabled,
       Value<String> translationStyle,
+      Value<String> fontFamily,
       Value<int> lastPageIndex,
       Value<double> lastScrollOffset,
       required DateTime updatedAt,
@@ -10478,6 +10527,7 @@ typedef $$BookSettingsTableUpdateCompanionBuilder =
       Value<String> readingTheme,
       Value<bool> isTranslationEnabled,
       Value<String> translationStyle,
+      Value<String> fontFamily,
       Value<int> lastPageIndex,
       Value<double> lastScrollOffset,
       Value<DateTime> updatedAt,
@@ -10537,6 +10587,11 @@ class $$BookSettingsTableFilterComposer
 
   ColumnFilters<String> get translationStyle => $composableBuilder(
     column: $table.translationStyle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10613,6 +10668,11 @@ class $$BookSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get lastPageIndex => $composableBuilder(
     column: $table.lastPageIndex,
     builder: (column) => ColumnOrderings(column),
@@ -10679,6 +10739,11 @@ class $$BookSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get translationStyle => $composableBuilder(
     column: $table.translationStyle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fontFamily => $composableBuilder(
+    column: $table.fontFamily,
     builder: (column) => column,
   );
 
@@ -10753,6 +10818,7 @@ class $$BookSettingsTableTableManager
                 Value<String> readingTheme = const Value.absent(),
                 Value<bool> isTranslationEnabled = const Value.absent(),
                 Value<String> translationStyle = const Value.absent(),
+                Value<String> fontFamily = const Value.absent(),
                 Value<int> lastPageIndex = const Value.absent(),
                 Value<double> lastScrollOffset = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -10763,6 +10829,7 @@ class $$BookSettingsTableTableManager
                 readingTheme: readingTheme,
                 isTranslationEnabled: isTranslationEnabled,
                 translationStyle: translationStyle,
+                fontFamily: fontFamily,
                 lastPageIndex: lastPageIndex,
                 lastScrollOffset: lastScrollOffset,
                 updatedAt: updatedAt,
@@ -10775,6 +10842,7 @@ class $$BookSettingsTableTableManager
                 Value<String> readingTheme = const Value.absent(),
                 Value<bool> isTranslationEnabled = const Value.absent(),
                 Value<String> translationStyle = const Value.absent(),
+                Value<String> fontFamily = const Value.absent(),
                 Value<int> lastPageIndex = const Value.absent(),
                 Value<double> lastScrollOffset = const Value.absent(),
                 required DateTime updatedAt,
@@ -10785,6 +10853,7 @@ class $$BookSettingsTableTableManager
                 readingTheme: readingTheme,
                 isTranslationEnabled: isTranslationEnabled,
                 translationStyle: translationStyle,
+                fontFamily: fontFamily,
                 lastPageIndex: lastPageIndex,
                 lastScrollOffset: lastScrollOffset,
                 updatedAt: updatedAt,

@@ -25,6 +25,11 @@ class AlineaApp extends ConsumerWidget {
       case ReadingThemeMode.light:
         theme = AppTheme.lightTheme;
         break;
+      case ReadingThemeMode.system:
+        theme = MediaQuery.platformBrightnessOf(context) == Brightness.dark
+            ? AppTheme.darkTheme
+            : AppTheme.lightTheme;
+        break;
     }
 
     return MaterialApp(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../app/providers.dart';
+import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/storage/database.dart';
 import '../../reader/presentation/reader_screen.dart';
@@ -170,6 +171,23 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ],
         ),
         actions: [
+          // App-wide theme toggle
+          Consumer(
+            builder: (context, ref, _) {
+              final currentTheme = ref.watch(readingThemeModeProvider);
+              return IconButton(
+                icon: Icon(_getAppThemeIcon(currentTheme)),
+                tooltip: 'Mode Tema (${_getAppThemeName(currentTheme)})',
+                onPressed: () {
+                  final next = _nextAppTheme(currentTheme);
+                  ref.read(readingThemeModeProvider.notifier).state = next;
+                  ref.read(appSettingsProvider.notifier).save(
+                        ref.read(appSettingsProvider).copyWith(readingTheme: next.name),
+                      );
+                },
+              );
+            },
+          ),
           // View toggle
           IconButton(
             icon: Icon(_viewMode == 'grid' ? Icons.view_list_rounded : Icons.grid_view_rounded),
@@ -402,6 +420,51 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         );
       },
     );
+  }
+
+  ReadingThemeMode _nextAppTheme(ReadingThemeMode current) {
+    switch (current) {
+      case ReadingThemeMode.system:
+        return ReadingThemeMode.light;
+      case ReadingThemeMode.light:
+        return ReadingThemeMode.dark;
+      case ReadingThemeMode.dark:
+        return ReadingThemeMode.sepia;
+      case ReadingThemeMode.sepia:
+        return ReadingThemeMode.amoled;
+      case ReadingThemeMode.amoled:
+        return ReadingThemeMode.system;
+    }
+  }
+
+  IconData _getAppThemeIcon(ReadingThemeMode theme) {
+    switch (theme) {
+      case ReadingThemeMode.system:
+        return Icons.brightness_auto_rounded;
+      case ReadingThemeMode.light:
+        return Icons.light_mode_rounded;
+      case ReadingThemeMode.sepia:
+        return Icons.wb_sunny_rounded;
+      case ReadingThemeMode.dark:
+        return Icons.dark_mode_rounded;
+      case ReadingThemeMode.amoled:
+        return Icons.brightness_1_rounded;
+    }
+  }
+
+  String _getAppThemeName(ReadingThemeMode theme) {
+    switch (theme) {
+      case ReadingThemeMode.system:
+        return 'Sistem';
+      case ReadingThemeMode.light:
+        return 'Terang';
+      case ReadingThemeMode.sepia:
+        return 'Sepia';
+      case ReadingThemeMode.dark:
+        return 'Gelap';
+      case ReadingThemeMode.amoled:
+        return 'AMOLED';
+    }
   }
 
   Widget _buildFilterChip(String label, String value, String currentFilter) {

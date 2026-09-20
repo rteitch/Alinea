@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum ReadingThemeMode {
+  system,
   light,
   sepia,
   dark,

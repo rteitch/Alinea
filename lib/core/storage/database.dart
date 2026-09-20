@@ -156,6 +156,7 @@ class BookSettings extends Table {
   TextColumn get readingTheme => text().withDefault(const Constant('light'))();
   BoolColumn get isTranslationEnabled => boolean().withDefault(const Constant(false))();
   TextColumn get translationStyle => text().withDefault(const Constant('natural'))();
+  TextColumn get fontFamily => text().withDefault(const Constant('default'))();
   IntColumn get lastPageIndex => integer().withDefault(const Constant(0))();
   RealColumn get lastScrollOffset => real().withDefault(const Constant(0.0))();
   DateTimeColumn get updatedAt => dateTime()();
@@ -195,7 +196,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -228,6 +229,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.addColumn(bookmarks, bookmarks.note);
       }
+      // Schema v4 → v5: Add fontFamily column to book_settings
+      if (from < 5) {
+        await m.addColumn(bookSettings, bookSettings.fontFamily);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -247,6 +252,7 @@ class AppDatabase extends _$AppDatabase {
     String? readingTheme,
     bool? isTranslationEnabled,
     String? translationStyle,
+    String? fontFamily,
     int? lastPageIndex,
     double? lastScrollOffset,
   }) async {
@@ -262,6 +268,7 @@ class AppDatabase extends _$AppDatabase {
           readingTheme: readingTheme != null ? Value(readingTheme) : const Value.absent(),
           isTranslationEnabled: isTranslationEnabled != null ? Value(isTranslationEnabled) : const Value.absent(),
           translationStyle: translationStyle != null ? Value(translationStyle) : const Value.absent(),
+          fontFamily: fontFamily != null ? Value(fontFamily) : const Value.absent(),
           lastPageIndex: lastPageIndex != null ? Value(lastPageIndex) : const Value.absent(),
           lastScrollOffset: lastScrollOffset != null ? Value(lastScrollOffset) : const Value.absent(),
           updatedAt: Value(now),
@@ -276,6 +283,7 @@ class AppDatabase extends _$AppDatabase {
           readingTheme: Value(readingTheme ?? 'light'),
           isTranslationEnabled: Value(isTranslationEnabled ?? false),
           translationStyle: Value(translationStyle ?? 'natural'),
+          fontFamily: Value(fontFamily ?? 'default'),
           lastPageIndex: Value(lastPageIndex ?? 0),
           lastScrollOffset: Value(lastScrollOffset ?? 0.0),
           updatedAt: now,
