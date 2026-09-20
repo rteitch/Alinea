@@ -384,12 +384,44 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Future<void> _addCurrentBookmark() async {
     if (_chapters.isEmpty) return;
     final currentChapter = _chapters[_currentChapterIndex];
+    
+    // Show note input dialog
+    final noteController = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tambah Penanda'),
+        content: TextField(
+          controller: noteController,
+          decoration: const InputDecoration(
+            labelText: 'Catatan (opsional)',
+            hintText: 'Tulis catatan untuk bookmark ini...',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, noteController.text),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+    
+    final note = result?.isNotEmpty == true ? result : null;
+    
     final bookmarkRepo = ref.read(bookmarkRepositoryProvider);
     await bookmarkRepo.addBookmark(
       bookId: widget.bookId,
       chapterId: currentChapter.id,
       cfi: '/chapter/$_currentChapterIndex',
       label: currentChapter.title ?? 'Bab ${_currentChapterIndex + 1}',
+      note: note,
     );
     await _loadBookmarks();
     if (mounted) {
@@ -475,7 +507,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                                 ),
                                 title: Text(bm.label ?? chapter.title ?? 'Bab ${chapterIndex + 1}',
                                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                subtitle: Text('Disimpan pada $dateStr', style: const TextStyle(fontSize: 11)),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Disimpan pada $dateStr', style: const TextStyle(fontSize: 11)),
+                                    if (bm.note != null && bm.note!.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          bm.note!,
+                                          style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                                 trailing: IconButton(
                                   icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
                                   tooltip: 'Hapus',
@@ -862,6 +909,159 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
+  void _showSearchInBook() {
+    final searchController = TextEditingController();
+    List<Map<String, dynamic>> results = [];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              minChildSize: 0.3,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (context, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      // Handle
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Title
+                      const Row(
+                        children: [
+                          Icon(Icons.search_rounded),
+                          SizedBox(width: 8),
+                          Text('Cari dalam Buku', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      // Search field
+                      TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Masukkan kata kunci...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              searchController.clear();
+                              setSheetState(() => results = []);
+                            },
+                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
+                        onSubmitted: (query) async {
+                          if (query.trim().isEmpty) return;
+                          final searchResults = <Map<String, dynamic>>[];
+                          final bookRepo = ref.read(bookRepositoryProvider);
+                          for (int i = 0; i < _chapters.length; i++) {
+                            final chapter = _chapters[i];
+                            try {
+                              final htmlContent = await bookRepo.getChapterContent(widget.bookId, chapter.id);
+                              // Strip HTML tags for text search
+                              final plainText = htmlContent
+                                  .replaceAll(RegExp(r'<[^>]*>'), '')
+                                  .toLowerCase();
+                              final queryLower = query.toLowerCase();
+                              if (plainText.contains(queryLower)) {
+                                // Find the context around the match
+                                final idx = plainText.indexOf(queryLower);
+                                final start = (idx - 30).clamp(0, plainText.length);
+                                final end = (idx + query.length + 30).clamp(0, plainText.length);
+                                final snippet = '...${plainText.substring(start, end)}...';
+                                searchResults.add({
+                                  'chapterIndex': i,
+                                  'chapterTitle': chapter.title ?? 'Bab ${i + 1}',
+                                  'snippet': snippet,
+                                });
+                              }
+                            } catch (_) {
+                              // Skip chapters that fail to load
+                            }
+                          }
+                          setSheetState(() => results = searchResults);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      // Results count
+                      if (results.isNotEmpty)
+                        Text(
+                          '${results.length} hasil ditemukan',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      const SizedBox(height: 8),
+                      // Results list
+                      Expanded(
+                        child: results.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'Ketik kata kunci untuk mencari',
+                                  style: TextStyle(color: Colors.grey.shade400),
+                                ),
+                              )
+                            : ListView.separated(
+                                controller: scrollController,
+                                itemCount: results.length,
+                                separatorBuilder: (_, __) => const Divider(height: 1),
+                                itemBuilder: (context, idx) {
+                                  final r = results[idx];
+                                  return ListTile(
+                                    leading: CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                                      child: Icon(Icons.menu_book_rounded, size: 16, color: Theme.of(context).colorScheme.secondary),
+                                    ),
+                                    title: Text(
+                                      r['chapterTitle'],
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                    subtitle: Text(
+                                      r['snippet'],
+                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    onTap: () {
+                                      Navigator.pop(ctx);
+                                      // Navigate to the chapter
+                                      setState(() {
+                                        _currentChapterIndex = r['chapterIndex'];
+                                      });
+                                      _loadCurrentChapterContent();
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showReadingSettings() {
     showModalBottomSheet(
       context: context,
@@ -1226,6 +1426,12 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 ),
               );
             },
+          ),
+          // Search in Book
+          IconButton(
+            icon: const Icon(Icons.search_rounded, size: 20),
+            tooltip: 'Cari dalam Buku',
+            onPressed: _showSearchInBook,
           ),
           // Inline Page Translation Toggle (Terjemahkan Langsung Halaman Ini)
           IconButton(

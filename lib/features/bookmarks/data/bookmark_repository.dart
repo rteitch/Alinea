@@ -16,6 +16,7 @@ class BookmarkRepository {
     required int chapterId,
     required String cfi,
     String? label,
+    String? note,
   }) async {
     final now = DateTime.now();
     final companion = BookmarksCompanion.insert(
@@ -24,6 +25,7 @@ class BookmarkRepository {
       chapterId: chapterId,
       cfi: cfi,
       label: Value(label),
+      note: Value(note),
       createdAt: now,
     );
 

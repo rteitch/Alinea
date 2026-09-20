@@ -73,6 +73,7 @@ class Bookmarks extends Table {
   IntColumn get chapterId => integer().customConstraint('NOT NULL REFERENCES chapters(id) ON DELETE CASCADE')();
   TextColumn get cfi => text()();
   TextColumn get label => text().nullable()();
+  TextColumn get note => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 }
 
@@ -194,7 +195,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -222,6 +223,10 @@ class AppDatabase extends _$AppDatabase {
       // Schema v2 → v3: Add reading_sessions table
       if (from < 3) {
         await m.createTable(readingSessions);
+      }
+      // Schema v3 → v4: Add note column to bookmarks
+      if (from < 4) {
+        await m.addColumn(bookmarks, bookmarks.note);
       }
     },
     beforeOpen: (details) async {
@@ -328,6 +333,41 @@ class AppDatabase extends _$AppDatabase {
       'totalChapters': totalChapters,
       'totalWordsTranslated': totalWords,
     };
+  }
+
+  /// Calculate reading streak across all books
+  Future<int> getReadingStreak() async {
+    final sessions = await select(readingSessions).get();
+    if (sessions.isEmpty) return 0;
+
+    // Get unique dates (just the date part)
+    final dates = sessions
+        .map((s) => DateTime(s.startedAt.year, s.startedAt.month, s.startedAt.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a)); // desc
+
+    if (dates.isEmpty) return 0;
+
+    // Check if today or yesterday has a session
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final yesterdayDate = todayDate.subtract(const Duration(days: 1));
+
+    if (!dates.contains(todayDate) && !dates.contains(yesterdayDate)) {
+      return 0; // Streak broken
+    }
+
+    int streak = 1;
+    for (int i = 0; i < dates.length - 1; i++) {
+      final diff = dates[i].difference(dates[i + 1]).inDays;
+      if (diff == 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 }
 

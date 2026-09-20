@@ -164,6 +164,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ),
               ),
             ),
+            const SizedBox(width: 6),
+            // Reading streak badge
+            _buildStreakBadge(context),
           ],
         ),
         actions: [
@@ -364,6 +367,40 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Import EPUB'),
       ),
+    );
+  }
+
+  Widget _buildStreakBadge(BuildContext context) {
+    final db = ref.watch(databaseProvider);
+    return FutureBuilder<int>(
+      future: db.getReadingStreak(),
+      builder: (context, snapshot) {
+        final streak = snapshot.data ?? 0;
+        if (streak == 0) return const SizedBox.shrink();
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade100,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: Colors.orange.shade300),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🔥', style: TextStyle(fontSize: 10)),
+              const SizedBox(width: 2),
+              Text(
+                '$streak hari',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade800,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
