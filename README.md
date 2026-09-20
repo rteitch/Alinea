@@ -22,7 +22,7 @@
 
 <p align="center">
   <a href="https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk">
-    <img src="https://img.shields.io/badge/Download-APK%20v1.2.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+    <img src="https://img.shields.io/badge/Download-APK%20v1.3.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
   </a>
 </p>
 
@@ -57,7 +57,7 @@ Unlike conventional reader applications that require clumsy copy-pasting to exte
 
 | Platform | Link |
 |---|---|
-| **Android** | [**Download app-release.apk (v1.2.0)**](https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk) |
+| **Android** | [**Download app-release.apk (v1.3.0)**](https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk) |
 
 > **Requirements:** Android 7.0+ (API 24+). For translation features, deploy the backend gateway ([see below](#3-deploying-the-translation-gateway)).
 
@@ -205,7 +205,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ## 🗄️ Database Schema (Drift SQLite)
 
-The database schema is strictly normalized into **8 relational entities**, with foreign key constraints, indexation, and dual identity (`id` integer + `uuid` RFC-4122 v4):
+The database schema is strictly normalized into **9 relational entities**, with foreign key constraints, indexation, and dual identity (`id` integer + `uuid` RFC-4122 v4):
 
 | Table | Role | Key Constraints & Indexes |
 |---|---|---|
@@ -217,6 +217,7 @@ The database schema is strictly normalized into **8 relational entities**, with 
 | `translation_units` | Stable DOM node anchor index | `UNIQUE (chapter_id, node_path)` |
 | `translation_cache` | Content-addressed LRU cache | `UNIQUE (source_text_hash, source_lang, target_lang, provider, provider_version, style)` |
 | `glossary_terms` | Terminology lock definitions | Scoped index `ux_glossary_scoped` + Global partial index `ux_glossary_global` |
+| `book_settings` | Per-book reader preferences | `UNIQUE (book_id)` with `ON DELETE CASCADE`; font size, theme, translation, scroll position |
 
 ---
 
@@ -236,7 +237,7 @@ Alinea enforces rigorous automated testing aligned with **ISTQB (International S
 ✅ Flutter Client Tests:  48 / 48 passed (100%)
 ✅ Static Analysis:       0 Errors, 0 Warnings, 0 Lints (dart analyze)
 ✅ FastAPI Backend Tests: 4 / 4 passed (pytest)
-✅ Android Release Build: 59.9 MB standalone APK compiled
+✅ Android Release Build: 60.0 MB standalone APK compiled
 ```
 
 ---
