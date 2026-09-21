@@ -377,6 +377,20 @@ class AppDatabase extends _$AppDatabase {
     }
     return streak;
   }
+
+  /// Get total reading minutes for today
+  Future<int> getTodayReadingMinutes() async {
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    final sessions = await (select(readingSessions)
+          ..where((t) => t.startedAt.isBiggerOrEqualValue(todayStart) & t.startedAt.isSmallerThanValue(todayEnd)))
+        .get();
+
+    final totalSeconds = sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+    return totalSeconds ~/ 60;
+  }
 }
 
 LazyDatabase _openConnection() {

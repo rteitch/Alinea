@@ -15,6 +15,7 @@ class AppSettings {
   final String readingTheme;
   final double fontSize;
   final String translationStyle;
+  final int dailyGoalMinutes;
 
   const AppSettings({
     this.gatewayUrl = 'http://10.0.2.2:8000/v1',
@@ -27,6 +28,7 @@ class AppSettings {
     this.readingTheme = 'light',
     this.fontSize = 16.0,
     this.translationStyle = 'natural',
+    this.dailyGoalMinutes = 30,
   });
 
   Map<String, dynamic> toJson() => {
@@ -40,6 +42,7 @@ class AppSettings {
         'readingTheme': readingTheme,
         'fontSize': fontSize,
         'translationStyle': translationStyle,
+        'dailyGoalMinutes': dailyGoalMinutes,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -54,6 +57,7 @@ class AppSettings {
       readingTheme: json['readingTheme'] as String? ?? 'light',
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
       translationStyle: json['translationStyle'] as String? ?? 'natural',
+      dailyGoalMinutes: (json['dailyGoalMinutes'] as num?)?.toInt() ?? 30,
     );
   }
 
@@ -68,6 +72,7 @@ class AppSettings {
     String? readingTheme,
     double? fontSize,
     String? translationStyle,
+    int? dailyGoalMinutes,
   }) {
     return AppSettings(
       gatewayUrl: gatewayUrl ?? this.gatewayUrl,
@@ -80,6 +85,7 @@ class AppSettings {
       readingTheme: readingTheme ?? this.readingTheme,
       fontSize: fontSize ?? this.fontSize,
       translationStyle: translationStyle ?? this.translationStyle,
+      dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
     );
   }
 }

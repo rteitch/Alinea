@@ -975,6 +975,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
+          // Daily Reading Goal
+          const Text('Target Membaca Harian', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final goal = ref.watch(appSettingsProvider).dailyGoalMinutes;
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Target:', style: TextStyle(fontSize: 13)),
+                          Text('$goal menit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                        ],
+                      ),
+                      Slider(
+                        value: goal.toDouble(),
+                        min: 5,
+                        max: 120,
+                        divisions: 23,
+                        label: '$goal menit',
+                        onChanged: (val) {
+                          ref.read(appSettingsProvider.notifier).save(
+                            ref.read(appSettingsProvider).copyWith(dailyGoalMinutes: val.toInt()),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Data Management
           const Text('Manajemen Data', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),

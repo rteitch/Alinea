@@ -7,6 +7,7 @@ import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/storage/database.dart';
+import '../../reader/presentation/reading_goal_card.dart';
 import '../../reader/presentation/reader_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'cover_gallery_screen.dart';
@@ -290,92 +291,106 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                    return _buildEmptyState();
                  }
 
-                 if (_viewMode == 'list') {
-                   return ListView.builder(
-                     padding: const EdgeInsets.all(16),
-                     itemCount: filtered.length,
-                     itemBuilder: (context, index) {
-                       final book = filtered[index];
-                       return _BookListTile(
-                         book: book,
-                         onTap: () async {
-                           await Navigator.push(
-                             context,
-                             MaterialPageRoute(
-                               builder: (_) => ReaderScreen(bookId: book.id),
-                             ),
-                           );
-                           ref.invalidate(booksListProvider);
-                         },
-                         onFavoriteToggle: () async {
-                           final repo = ref.read(bookRepositoryProvider);
-                           await repo.toggleFavorite(book.id);
-                           ref.invalidate(booksListProvider);
-                         },
-                       );
-                     },
-                   );
-                 }
+                  if (_viewMode == 'list') {
+                    return Column(
+                      children: [
+                        const ReadingGoalCard(),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final book = filtered[index];
+                              return _BookListTile(
+                                book: book,
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ReaderScreen(bookId: book.id),
+                                    ),
+                                  );
+                                  ref.invalidate(booksListProvider);
+                                },
+                                onFavoriteToggle: () async {
+                                  final repo = ref.read(bookRepositoryProvider);
+                                  await repo.toggleFavorite(book.id);
+                                  ref.invalidate(booksListProvider);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  }
 
-                 return GridView.builder(
-                   padding: const EdgeInsets.all(16),
-                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                     crossAxisCount: 2,
-                     childAspectRatio: 0.58,
-                     crossAxisSpacing: 14,
-                     mainAxisSpacing: 14,
-                   ),
-                   itemCount: filtered.length,
-                   itemBuilder: (context, index) {
-                     final book = filtered[index];
-                     return _BookCard(
-                       book: book,
-                       onTap: () async {
-                         await Navigator.push(
-                           context,
-                           MaterialPageRoute(
-                             builder: (_) => ReaderScreen(bookId: book.id),
-                           ),
-                         );
-                         ref.invalidate(booksListProvider);
-                       },
-                       onFavoriteToggle: () async {
-                         final repo = ref.read(bookRepositoryProvider);
-                         await repo.toggleFavorite(book.id);
-                         ref.invalidate(booksListProvider);
-                       },
-                       onArchive: () async {
-                         final repo = ref.read(bookRepositoryProvider);
-                         await repo.archiveBook(book.id);
-                         ref.invalidate(booksListProvider);
-                         if (context.mounted) {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             const SnackBar(content: Text('Buku telah diarsipkan.')),
-                           );
-                         }
-                       },
-                       onCoverTap: () {
-                         final booksWithCovers = filtered.where(
-                           (b) => b.coverPath != null && File(b.coverPath!).existsSync(),
-                         ).toList();
-                         final coverIndex = booksWithCovers.indexWhere((b) => b.id == book.id);
-                         if (coverIndex >= 0) {
-                           Navigator.push(
-                             context,
-                             MaterialPageRoute(
-                               builder: (_) => CoverGalleryScreen(
-                                 books: booksWithCovers,
-                                 initialIndex: coverIndex,
-                               ),
-                             ),
-                           );
-                         }
-                       },
-                     );
-                   },
-                 );
-               },
-               loading: () => const Center(child: CircularProgressIndicator()),
+                  return Column(
+                    children: [
+                      const ReadingGoalCard(),
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.58,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (context, index) {
+                            final book = filtered[index];
+                            return _BookCard(
+                              book: book,
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ReaderScreen(bookId: book.id),
+                                  ),
+                                );
+                                ref.invalidate(booksListProvider);
+                              },
+                              onFavoriteToggle: () async {
+                                final repo = ref.read(bookRepositoryProvider);
+                                await repo.toggleFavorite(book.id);
+                                ref.invalidate(booksListProvider);
+                              },
+                              onArchive: () async {
+                                final repo = ref.read(bookRepositoryProvider);
+                                await repo.archiveBook(book.id);
+                                ref.invalidate(booksListProvider);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Buku telah diarsipkan.')),
+                                  );
+                                }
+                              },
+                              onCoverTap: () {
+                                final booksWithCovers = filtered.where(
+                                  (b) => b.coverPath != null && File(b.coverPath!).existsSync(),
+                                ).toList();
+                                final coverIndex = booksWithCovers.indexWhere((b) => b.id == book.id);
+                                if (coverIndex >= 0) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CoverGalleryScreen(
+                                        books: booksWithCovers,
+                                        initialIndex: coverIndex,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
                error: (err, stack) => Center(
                  child: Text('Terjadi kesalahan memuat perpustakaan: $err'),
                ),
