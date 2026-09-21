@@ -22,6 +22,9 @@ import 'bookmarks_summary_screen.dart';
 import 'reading_pace_screen.dart';
 import 'reading_distribution_screen.dart';
 import 'bookshelf_magazine_view.dart';
+import 'vocabulary_builder_screen.dart';
+import 'reading_goals_dashboard.dart';
+import 'book_quick_actions.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -238,6 +241,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 case 'distribution':
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDistributionScreen()));
                   break;
+                case 'vocabulary':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const VocabularyBuilderScreen()));
+                  break;
+                case 'goals':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingGoalsDashboard()));
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -250,6 +259,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               const PopupMenuItem(value: 'bookmarks_summary', child: ListTile(leading: Icon(Icons.bookmark_rounded), title: Text('Semua Bookmark'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'pace', child: ListTile(leading: Icon(Icons.speed_rounded), title: Text('Kecepatan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'distribution', child: ListTile(leading: Icon(Icons.pie_chart_rounded), title: Text('Distribusi Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'vocabulary', child: ListTile(leading: Icon(Icons.school_rounded), title: Text('Kosakata'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'goals', child: ListTile(leading: Icon(Icons.track_changes_rounded), title: Text('Target Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
             ],
           ),
           // View toggle
@@ -721,6 +733,7 @@ class _BookCard extends ConsumerWidget {
 
     return InkWell(
       onTap: onTap,
+      onLongPress: () => BookQuickActions.show(context, ref, book),
       borderRadius: BorderRadius.circular(12),
       child: Card(
         elevation: 2,
