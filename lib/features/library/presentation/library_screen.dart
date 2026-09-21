@@ -17,6 +17,9 @@ import 'reading_challenge_screen.dart';
 import 'achievements_screen.dart';
 import 'book_comparison_screen.dart';
 import 'reading_heatmap_screen.dart';
+import 'highlights_summary_screen.dart';
+import 'bookmarks_summary_screen.dart';
+import 'reading_pace_screen.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -221,6 +224,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 case 'heatmap':
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingHeatMapScreen()));
                   break;
+                case 'highlights_summary':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const HighlightsSummaryScreen()));
+                  break;
+                case 'bookmarks_summary':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BookmarksSummaryScreen()));
+                  break;
+                case 'pace':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingPaceScreen()));
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -228,6 +240,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               const PopupMenuItem(value: 'achievements', child: ListTile(leading: Icon(Icons.workspace_premium_rounded), title: Text('Pencapaian'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'comparison', child: ListTile(leading: Icon(Icons.bar_chart_rounded), title: Text('Perbandingan Buku'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'heatmap', child: ListTile(leading: Icon(Icons.local_fire_department_rounded), title: Text('Peta Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'highlights_summary', child: ListTile(leading: Icon(Icons.highlight_rounded), title: Text('Semua Highlight'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'bookmarks_summary', child: ListTile(leading: Icon(Icons.bookmark_rounded), title: Text('Semua Bookmark'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'pace', child: ListTile(leading: Icon(Icons.speed_rounded), title: Text('Kecepatan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
             ],
           ),
           // View toggle
