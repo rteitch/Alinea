@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
+import '../../library/presentation/goal_history_screen.dart';
 
 class ReadingGoalCard extends ConsumerWidget {
   const ReadingGoalCard({super.key});
@@ -13,7 +14,15 @@ class ReadingGoalCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GoalHistoryScreen()),
+          );
+        },
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,6 +83,7 @@ class ReadingGoalCard extends ConsumerWidget {
               },
             ),
           ],
+        ),
         ),
       ),
     );

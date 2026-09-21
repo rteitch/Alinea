@@ -16,6 +16,9 @@ class AppSettings {
   final double fontSize;
   final String translationStyle;
   final int dailyGoalMinutes;
+  final bool reminderEnabled;
+  final int reminderHour;
+  final int reminderMinute;
 
   const AppSettings({
     this.gatewayUrl = 'http://10.0.2.2:8000/v1',
@@ -29,6 +32,9 @@ class AppSettings {
     this.fontSize = 16.0,
     this.translationStyle = 'natural',
     this.dailyGoalMinutes = 30,
+    this.reminderEnabled = false,
+    this.reminderHour = 20,
+    this.reminderMinute = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -43,6 +49,9 @@ class AppSettings {
         'fontSize': fontSize,
         'translationStyle': translationStyle,
         'dailyGoalMinutes': dailyGoalMinutes,
+        'reminderEnabled': reminderEnabled,
+        'reminderHour': reminderHour,
+        'reminderMinute': reminderMinute,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -58,6 +67,9 @@ class AppSettings {
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 16.0,
       translationStyle: json['translationStyle'] as String? ?? 'natural',
       dailyGoalMinutes: (json['dailyGoalMinutes'] as num?)?.toInt() ?? 30,
+      reminderEnabled: json['reminderEnabled'] as bool? ?? false,
+      reminderHour: (json['reminderHour'] as num?)?.toInt() ?? 20,
+      reminderMinute: (json['reminderMinute'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -73,6 +85,9 @@ class AppSettings {
     double? fontSize,
     String? translationStyle,
     int? dailyGoalMinutes,
+    bool? reminderEnabled,
+    int? reminderHour,
+    int? reminderMinute,
   }) {
     return AppSettings(
       gatewayUrl: gatewayUrl ?? this.gatewayUrl,
@@ -86,6 +101,9 @@ class AppSettings {
       fontSize: fontSize ?? this.fontSize,
       translationStyle: translationStyle ?? this.translationStyle,
       dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
+      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      reminderHour: reminderHour ?? this.reminderHour,
+      reminderMinute: reminderMinute ?? this.reminderMinute,
     );
   }
 }

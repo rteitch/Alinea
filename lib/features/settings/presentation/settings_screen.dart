@@ -1014,6 +1014,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
+          // Reading Reminder
+          Text('Pengingat Membaca', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final settings = ref.watch(appSettingsProvider);
+                  return Column(
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Aktifkan Pengingat'),
+                        subtitle: Text(
+                          settings.reminderEnabled
+                              ? 'Pengingat aktif jam ${settings.reminderHour.toString().padLeft(2, '0')}:${settings.reminderMinute.toString().padLeft(2, '0')}'
+                              : 'Pengingat tidak aktif',
+                        ),
+                        value: settings.reminderEnabled,
+                        onChanged: (val) {
+                          ref.read(appSettingsProvider.notifier).save(
+                            settings.copyWith(reminderEnabled: val),
+                          );
+                        },
+                      ),
+                      if (settings.reminderEnabled) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Waktu Pengingat:', style: TextStyle(fontSize: 13)),
+                            FilledButton.tonal(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(
+                                    hour: settings.reminderHour,
+                                    minute: settings.reminderMinute,
+                                  ),
+                                );
+                                if (picked != null) {
+                                  ref.read(appSettingsProvider.notifier).save(
+                                    settings.copyWith(
+                                      reminderHour: picked.hour,
+                                      reminderMinute: picked.minute,
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Text(
+                                '${settings.reminderHour.toString().padLeft(2, '0')}:${settings.reminderMinute.toString().padLeft(2, '0')}',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Data Management
           Text(AppLocalizations.of(context)!.dataManagement, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
