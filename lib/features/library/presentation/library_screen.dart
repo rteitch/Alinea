@@ -20,6 +20,8 @@ import 'reading_heatmap_screen.dart';
 import 'highlights_summary_screen.dart';
 import 'bookmarks_summary_screen.dart';
 import 'reading_pace_screen.dart';
+import 'reading_distribution_screen.dart';
+import 'bookshelf_magazine_view.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -56,7 +58,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   bool _isImporting = false;
   String _searchQuery = '';
-  String _viewMode = 'grid'; // 'grid' or 'list'
+  String _viewMode = 'grid'; // 'grid', 'list', 'magazine'
 
   Future<void> _handleImportEpub() async {
     try {
@@ -233,6 +235,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 case 'pace':
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingPaceScreen()));
                   break;
+                case 'distribution':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingDistributionScreen()));
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -244,15 +249,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               const PopupMenuItem(value: 'highlights_summary', child: ListTile(leading: Icon(Icons.highlight_rounded), title: Text('Semua Highlight'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'bookmarks_summary', child: ListTile(leading: Icon(Icons.bookmark_rounded), title: Text('Semua Bookmark'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'pace', child: ListTile(leading: Icon(Icons.speed_rounded), title: Text('Kecepatan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'distribution', child: ListTile(leading: Icon(Icons.pie_chart_rounded), title: Text('Distribusi Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
             ],
           ),
           // View toggle
           IconButton(
-            icon: Icon(_viewMode == 'grid' ? Icons.view_list_rounded : Icons.grid_view_rounded),
-            tooltip: _viewMode == 'grid' ? 'Tampilan List' : 'Tampilan Grid',
+            icon: Icon(_viewMode == 'grid' ? Icons.view_list_rounded : _viewMode == 'list' ? Icons.view_module_rounded : Icons.grid_view_rounded),
+            tooltip: _viewMode == 'grid' ? 'Tampilan List' : _viewMode == 'list' ? 'Tampilan Magazine' : 'Tampilan Grid',
             onPressed: () {
               setState(() {
-                _viewMode = _viewMode == 'grid' ? 'list' : 'grid';
+                _viewMode = _viewMode == 'grid' ? 'list' : _viewMode == 'list' ? 'magazine' : 'grid';
               });
             },
           ),
@@ -430,6 +436,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               );
                             },
                           ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  if (_viewMode == 'magazine') {
+                    return Column(
+                      children: [
+                        const ReadingGoalCard(),
+                        Expanded(
+                          child: BookshelfMagazineView(books: filtered),
                         ),
                       ],
                     );

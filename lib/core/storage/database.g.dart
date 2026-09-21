@@ -4856,6 +4856,18 @@ class $BookSettingsTable extends BookSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(0.0),
   );
+  static const VerificationMeta _dailyGoalMinutesMeta = const VerificationMeta(
+    'dailyGoalMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> dailyGoalMinutes = GeneratedColumn<int>(
+    'daily_goal_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -4878,6 +4890,7 @@ class $BookSettingsTable extends BookSettings
     fontFamily,
     lastPageIndex,
     lastScrollOffset,
+    dailyGoalMinutes,
     updatedAt,
   ];
   @override
@@ -4960,6 +4973,15 @@ class $BookSettingsTable extends BookSettings
         ),
       );
     }
+    if (data.containsKey('daily_goal_minutes')) {
+      context.handle(
+        _dailyGoalMinutesMeta,
+        dailyGoalMinutes.isAcceptableOrUnknown(
+          data['daily_goal_minutes']!,
+          _dailyGoalMinutesMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -5013,6 +5035,10 @@ class $BookSettingsTable extends BookSettings
         DriftSqlType.double,
         data['${effectivePrefix}last_scroll_offset'],
       )!,
+      dailyGoalMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}daily_goal_minutes'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -5036,6 +5062,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
   final String fontFamily;
   final int lastPageIndex;
   final double lastScrollOffset;
+  final int dailyGoalMinutes;
   final DateTime updatedAt;
   const BookSetting({
     required this.id,
@@ -5047,6 +5074,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     required this.fontFamily,
     required this.lastPageIndex,
     required this.lastScrollOffset,
+    required this.dailyGoalMinutes,
     required this.updatedAt,
   });
   @override
@@ -5061,6 +5089,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     map['font_family'] = Variable<String>(fontFamily);
     map['last_page_index'] = Variable<int>(lastPageIndex);
     map['last_scroll_offset'] = Variable<double>(lastScrollOffset);
+    map['daily_goal_minutes'] = Variable<int>(dailyGoalMinutes);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -5076,6 +5105,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       fontFamily: Value(fontFamily),
       lastPageIndex: Value(lastPageIndex),
       lastScrollOffset: Value(lastScrollOffset),
+      dailyGoalMinutes: Value(dailyGoalMinutes),
       updatedAt: Value(updatedAt),
     );
   }
@@ -5097,6 +5127,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       fontFamily: serializer.fromJson<String>(json['fontFamily']),
       lastPageIndex: serializer.fromJson<int>(json['lastPageIndex']),
       lastScrollOffset: serializer.fromJson<double>(json['lastScrollOffset']),
+      dailyGoalMinutes: serializer.fromJson<int>(json['dailyGoalMinutes']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -5113,6 +5144,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       'fontFamily': serializer.toJson<String>(fontFamily),
       'lastPageIndex': serializer.toJson<int>(lastPageIndex),
       'lastScrollOffset': serializer.toJson<double>(lastScrollOffset),
+      'dailyGoalMinutes': serializer.toJson<int>(dailyGoalMinutes),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -5127,6 +5159,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     String? fontFamily,
     int? lastPageIndex,
     double? lastScrollOffset,
+    int? dailyGoalMinutes,
     DateTime? updatedAt,
   }) => BookSetting(
     id: id ?? this.id,
@@ -5138,6 +5171,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     fontFamily: fontFamily ?? this.fontFamily,
     lastPageIndex: lastPageIndex ?? this.lastPageIndex,
     lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
+    dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   BookSetting copyWithCompanion(BookSettingsCompanion data) {
@@ -5163,6 +5197,9 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
       lastScrollOffset: data.lastScrollOffset.present
           ? data.lastScrollOffset.value
           : this.lastScrollOffset,
+      dailyGoalMinutes: data.dailyGoalMinutes.present
+          ? data.dailyGoalMinutes.value
+          : this.dailyGoalMinutes,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -5179,6 +5216,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
           ..write('fontFamily: $fontFamily, ')
           ..write('lastPageIndex: $lastPageIndex, ')
           ..write('lastScrollOffset: $lastScrollOffset, ')
+          ..write('dailyGoalMinutes: $dailyGoalMinutes, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -5195,6 +5233,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
     fontFamily,
     lastPageIndex,
     lastScrollOffset,
+    dailyGoalMinutes,
     updatedAt,
   );
   @override
@@ -5210,6 +5249,7 @@ class BookSetting extends DataClass implements Insertable<BookSetting> {
           other.fontFamily == this.fontFamily &&
           other.lastPageIndex == this.lastPageIndex &&
           other.lastScrollOffset == this.lastScrollOffset &&
+          other.dailyGoalMinutes == this.dailyGoalMinutes &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -5223,6 +5263,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
   final Value<String> fontFamily;
   final Value<int> lastPageIndex;
   final Value<double> lastScrollOffset;
+  final Value<int> dailyGoalMinutes;
   final Value<DateTime> updatedAt;
   const BookSettingsCompanion({
     this.id = const Value.absent(),
@@ -5234,6 +5275,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     this.fontFamily = const Value.absent(),
     this.lastPageIndex = const Value.absent(),
     this.lastScrollOffset = const Value.absent(),
+    this.dailyGoalMinutes = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
   BookSettingsCompanion.insert({
@@ -5246,6 +5288,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     this.fontFamily = const Value.absent(),
     this.lastPageIndex = const Value.absent(),
     this.lastScrollOffset = const Value.absent(),
+    this.dailyGoalMinutes = const Value.absent(),
     required DateTime updatedAt,
   }) : bookId = Value(bookId),
        updatedAt = Value(updatedAt);
@@ -5259,6 +5302,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     Expression<String>? fontFamily,
     Expression<int>? lastPageIndex,
     Expression<double>? lastScrollOffset,
+    Expression<int>? dailyGoalMinutes,
     Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
@@ -5272,6 +5316,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
       if (fontFamily != null) 'font_family': fontFamily,
       if (lastPageIndex != null) 'last_page_index': lastPageIndex,
       if (lastScrollOffset != null) 'last_scroll_offset': lastScrollOffset,
+      if (dailyGoalMinutes != null) 'daily_goal_minutes': dailyGoalMinutes,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
@@ -5286,6 +5331,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     Value<String>? fontFamily,
     Value<int>? lastPageIndex,
     Value<double>? lastScrollOffset,
+    Value<int>? dailyGoalMinutes,
     Value<DateTime>? updatedAt,
   }) {
     return BookSettingsCompanion(
@@ -5298,6 +5344,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
       fontFamily: fontFamily ?? this.fontFamily,
       lastPageIndex: lastPageIndex ?? this.lastPageIndex,
       lastScrollOffset: lastScrollOffset ?? this.lastScrollOffset,
+      dailyGoalMinutes: dailyGoalMinutes ?? this.dailyGoalMinutes,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -5334,6 +5381,9 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
     if (lastScrollOffset.present) {
       map['last_scroll_offset'] = Variable<double>(lastScrollOffset.value);
     }
+    if (dailyGoalMinutes.present) {
+      map['daily_goal_minutes'] = Variable<int>(dailyGoalMinutes.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -5352,6 +5402,7 @@ class BookSettingsCompanion extends UpdateCompanion<BookSetting> {
           ..write('fontFamily: $fontFamily, ')
           ..write('lastPageIndex: $lastPageIndex, ')
           ..write('lastScrollOffset: $lastScrollOffset, ')
+          ..write('dailyGoalMinutes: $dailyGoalMinutes, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
@@ -11236,6 +11287,7 @@ typedef $$BookSettingsTableCreateCompanionBuilder =
       Value<String> fontFamily,
       Value<int> lastPageIndex,
       Value<double> lastScrollOffset,
+      Value<int> dailyGoalMinutes,
       required DateTime updatedAt,
     });
 typedef $$BookSettingsTableUpdateCompanionBuilder =
@@ -11249,6 +11301,7 @@ typedef $$BookSettingsTableUpdateCompanionBuilder =
       Value<String> fontFamily,
       Value<int> lastPageIndex,
       Value<double> lastScrollOffset,
+      Value<int> dailyGoalMinutes,
       Value<DateTime> updatedAt,
     });
 
@@ -11321,6 +11374,11 @@ class $$BookSettingsTableFilterComposer
 
   ColumnFilters<double> get lastScrollOffset => $composableBuilder(
     column: $table.lastScrollOffset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dailyGoalMinutes => $composableBuilder(
+    column: $table.dailyGoalMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11402,6 +11460,11 @@ class $$BookSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get dailyGoalMinutes => $composableBuilder(
+    column: $table.dailyGoalMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -11476,6 +11539,11 @@ class $$BookSettingsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get dailyGoalMinutes => $composableBuilder(
+    column: $table.dailyGoalMinutes,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
@@ -11540,6 +11608,7 @@ class $$BookSettingsTableTableManager
                 Value<String> fontFamily = const Value.absent(),
                 Value<int> lastPageIndex = const Value.absent(),
                 Value<double> lastScrollOffset = const Value.absent(),
+                Value<int> dailyGoalMinutes = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => BookSettingsCompanion(
                 id: id,
@@ -11551,6 +11620,7 @@ class $$BookSettingsTableTableManager
                 fontFamily: fontFamily,
                 lastPageIndex: lastPageIndex,
                 lastScrollOffset: lastScrollOffset,
+                dailyGoalMinutes: dailyGoalMinutes,
                 updatedAt: updatedAt,
               ),
           createCompanionCallback:
@@ -11564,6 +11634,7 @@ class $$BookSettingsTableTableManager
                 Value<String> fontFamily = const Value.absent(),
                 Value<int> lastPageIndex = const Value.absent(),
                 Value<double> lastScrollOffset = const Value.absent(),
+                Value<int> dailyGoalMinutes = const Value.absent(),
                 required DateTime updatedAt,
               }) => BookSettingsCompanion.insert(
                 id: id,
@@ -11575,6 +11646,7 @@ class $$BookSettingsTableTableManager
                 fontFamily: fontFamily,
                 lastPageIndex: lastPageIndex,
                 lastScrollOffset: lastScrollOffset,
+                dailyGoalMinutes: dailyGoalMinutes,
                 updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0

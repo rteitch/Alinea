@@ -159,6 +159,7 @@ class BookSettings extends Table {
   TextColumn get fontFamily => text().withDefault(const Constant('default'))();
   IntColumn get lastPageIndex => integer().withDefault(const Constant(0))();
   RealColumn get lastScrollOffset => real().withDefault(const Constant(0.0))();
+  IntColumn get dailyGoalMinutes => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime()();
 }
 
@@ -223,7 +224,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -269,6 +270,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await m.addColumn(readingSessions, readingSessions.wordsRead);
       }
+      // Schema v7 → v8: Add dailyGoalMinutes column to book_settings
+      if (from < 8) {
+        await m.addColumn(bookSettings, bookSettings.dailyGoalMinutes);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -291,6 +296,7 @@ class AppDatabase extends _$AppDatabase {
     String? fontFamily,
     int? lastPageIndex,
     double? lastScrollOffset,
+    int? dailyGoalMinutes,
   }) async {
     final existing = await getBookSetting(bookId);
     final now = DateTime.now();
@@ -307,6 +313,7 @@ class AppDatabase extends _$AppDatabase {
           fontFamily: fontFamily != null ? Value(fontFamily) : const Value.absent(),
           lastPageIndex: lastPageIndex != null ? Value(lastPageIndex) : const Value.absent(),
           lastScrollOffset: lastScrollOffset != null ? Value(lastScrollOffset) : const Value.absent(),
+          dailyGoalMinutes: dailyGoalMinutes != null ? Value(dailyGoalMinutes) : const Value.absent(),
           updatedAt: Value(now),
         ),
       );
@@ -322,6 +329,7 @@ class AppDatabase extends _$AppDatabase {
           fontFamily: Value(fontFamily ?? 'default'),
           lastPageIndex: Value(lastPageIndex ?? 0),
           lastScrollOffset: Value(lastScrollOffset ?? 0.0),
+          dailyGoalMinutes: Value(dailyGoalMinutes ?? 0),
           updatedAt: now,
         ),
       );

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
+import '../../../core/storage/database.dart';
 import '../../../l10n/app_localizations.dart';
 import 'session_history_screen.dart';
 
@@ -181,6 +182,11 @@ class ReadingStatsScreen extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
+              // Per-book daily goal
+              _PerBookGoalCard(bookId: bookId, db: db),
+
+              const SizedBox(height: 16),
+
               // Export options
               Card(
                 child: Padding(
@@ -348,5 +354,175 @@ class ReadingStatsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+class _PerBookGoalCard extends StatefulWidget {
+  final int bookId;
+  final AppDatabase db;
+
+  const _PerBookGoalCard({required this.bookId, required this.db});
+
+  @override
+  State<_PerBookGoalCard> createState() => _PerBookGoalCardState();
+}
+
+class _PerBookGoalCardState extends State<_PerBookGoalCard> {
+  int _goalMinutes = 0;
+  int _todayMinutes = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final setting = await widget.db.getBookSetting(widget.bookId);
+    final goal = setting?.dailyGoalMinutes ?? 0;
+
+    final sessions = await widget.db.getReadingSessions(widget.bookId);
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    int todayMin = 0;
+    for (final s in sessions) {
+      if (s.startedAt.isAfter(todayStart)) {
+        todayMin += s.durationSeconds ~/ 60;
+      }
+    }
+
+    setState(() {
+      _goalMinutes = goal;
+      _todayMinutes = todayMin;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _goalMinutes > 0 ? (_todayMinutes / _goalMinutes).clamp(0.0, 1.0) : 0.0;
+    final goalMet = _goalMinutes > 0 && _todayMinutes >= _goalMinutes;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  goalMet ? Icons.check_circle_rounded : Icons.track_changes_rounded,
+                  size: 16,
+                  color: goalMet ? Colors.green : Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 6),
+                Text('Target Harian Buku Ini', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (_goalMinutes > 0)
+                  IconButton(
+                    icon: const Icon(Icons.edit_rounded, size: 16),
+                    onPressed: _editGoal,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Ubah Target',
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_goalMinutes == 0)
+              TextButton.icon(
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Atas Target Membaca', style: TextStyle(fontSize: 13)),
+                onPressed: _editGoal,
+              )
+            else ...[
+              Row(
+                children: [
+                  Text(
+                    '$_todayMinutes / $_goalMinutes menit hari ini',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                  ),
+                  const Spacer(),
+                  if (goalMet)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(12)),
+                      child: Text('Tercapai!', style: TextStyle(fontSize: 11, color: Colors.green.shade700)),
+                    )
+                  else
+                    Text(
+                      '${((1 - progress) * _goalMinutes).round()} menit lagi',
+                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: goalMet ? Colors.green : Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editGoal() async {
+    final controller = TextEditingController(text: _goalMinutes > 0 ? '$_goalMinutes' : '');
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Target Membaca Harian'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Target menit membaca per hari untuk buku ini', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Menit',
+                suffixText: 'menit/hari',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [15, 30, 45, 60, 90, 120].map((m) => ActionChip(
+                label: Text('${m}m'),
+                onPressed: () {
+                  controller.text = '$m';
+                },
+              )).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              final val = int.tryParse(controller.text);
+              Navigator.pop(ctx, val);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      await widget.db.upsertBookSetting(bookId: widget.bookId, dailyGoalMinutes: result);
+      _load();
+    }
   }
 }
