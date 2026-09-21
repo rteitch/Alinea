@@ -11,6 +11,7 @@ import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
 import 'reading_stats_screen.dart';
 import 'translation_overlay.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   final int bookId;
@@ -1001,11 +1002,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                       ),
                       const SizedBox(height: 12),
                       // Title
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.search_rounded),
                           SizedBox(width: 8),
-                          Text('Cari dalam Buku', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(AppLocalizations.of(context)!.searchInBook, style: TextStyle(fontWeight: FontWeight.bold)),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -1014,7 +1015,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         controller: searchController,
                         autofocus: true,
                         decoration: InputDecoration(
-                          hintText: 'Masukkan kata kunci...',
+                          hintText: AppLocalizations.of(context)!.searchPlaceholder,
                           prefixIcon: const Icon(Icons.search, size: 20),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.clear, size: 18),
@@ -1519,7 +1520,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           // Reading Stats
           IconButton(
             icon: const Icon(Icons.bar_chart_rounded, size: 20),
-            tooltip: 'Statistik Membaca',
+            tooltip: AppLocalizations.of(context)!.statistics,
             onPressed: () {
               Navigator.push(
                 context,

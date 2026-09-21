@@ -8,6 +8,7 @@ import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
 import 'about_screen.dart';
 import 'language_picker_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -108,7 +109,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pengaturan & Integrasi'),
+        title: Text(AppLocalizations.of(context)!.settings),
         elevation: 0,
         actions: [
           IconButton(
@@ -358,7 +359,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                       const SizedBox(width: 10),
                       Text(
-                        'Pilihan Mesin Translasi',
+                        AppLocalizations.of(context)!.translationProvider,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -552,7 +553,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.translate_rounded, color: theme.colorScheme.primary),
                       const SizedBox(width: 10),
                       Text(
-                        'Bahasa Terjemahan',
+                        AppLocalizations.of(context)!.targetLanguage,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -692,7 +693,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icon(Icons.tune_rounded, color: theme.colorScheme.primary),
                       const SizedBox(width: 10),
                       Text(
-                        'Gaya Terjemahan',
+                        AppLocalizations.of(context)!.translationStyle,
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -976,7 +977,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 24),
 
           // Daily Reading Goal
-          const Text('Target Membaca Harian', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context)!.dailyReadingGoal, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Card(
             child: Padding(
@@ -989,7 +990,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Target:', style: TextStyle(fontSize: 13)),
+                          Text(AppLocalizations.of(context)!.goalLabel, style: TextStyle(fontSize: 13)),
                           Text('$goal menit', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                         ],
                       ),
@@ -1014,15 +1015,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 24),
 
           // Data Management
-          const Text('Manajemen Data', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(AppLocalizations.of(context)!.dataManagement, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Card(
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.backup_rounded),
-                  title: const Text('Backup Database'),
-                  subtitle: const Text('Simpan semua data ke file backup'),
+                  title: Text(AppLocalizations.of(context)!.backupDatabase),
+                  subtitle: Text(AppLocalizations.of(context)!.backupSubtitle),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     try {
@@ -1055,8 +1056,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.restore_rounded),
-                  title: const Text('Restore Database'),
-                  subtitle: const Text('Pulihkan data dari file backup'),
+                  title: Text(AppLocalizations.of(context)!.restoreDatabase),
+                  subtitle: Text(AppLocalizations.of(context)!.restoreSubtitle),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () async {
                     try {
@@ -1125,7 +1126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
-                  title: const Text('Tentang Alinea'),
+                  title: Text(AppLocalizations.of(context)!.aboutAlinea),
                   subtitle: const Text('Versi, lisensi, dan tautan'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () {

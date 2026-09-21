@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ReadingStatsScreen extends ConsumerWidget {
   final int bookId;
@@ -24,12 +25,12 @@ class ReadingStatsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistik Membaca'),
+        title: Text(AppLocalizations.of(context)!.statistics),
         actions: [
           // Export button
           IconButton(
             icon: const Icon(Icons.ios_share_rounded, size: 20),
-            tooltip: 'Ekspor Statistik',
+            tooltip: AppLocalizations.of(context)!.exportStats,
             onPressed: () => _exportStats(context, ref),
           ),
         ],
@@ -89,17 +90,17 @@ class ReadingStatsScreen extends ConsumerWidget {
               // Stats grid
               Row(
                 children: [
-                  Expanded(child: _buildStatCard(context, Icons.access_time_rounded, 'Waktu Total', timeStr, Colors.blue)),
+                  Expanded(child: _buildStatCard(context, Icons.access_time_rounded, AppLocalizations.of(context)!.totalTime, timeStr, Colors.blue)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildStatCard(context, Icons.chrome_reader_mode_rounded, 'Bab Dibaca', '$totalChapters', Colors.green)),
+                  Expanded(child: _buildStatCard(context, Icons.chrome_reader_mode_rounded, AppLocalizations.of(context)!.chaptersRead, '$totalChapters', Colors.green)),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: _buildStatCard(context, Icons.translate_rounded, 'Kata Diterjemahkan', '$totalWords', Colors.orange)),
+                  Expanded(child: _buildStatCard(context, Icons.translate_rounded, AppLocalizations.of(context)!.wordsTranslated, '$totalWords', Colors.orange)),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildStatCard(context, Icons.fiber_manual_record_rounded, 'Sesi Membaca', '$totalSessions', Colors.purple)),
+                  Expanded(child: _buildStatCard(context, Icons.fiber_manual_record_rounded, AppLocalizations.of(context)!.totalSessions, '$totalSessions', Colors.purple)),
                 ],
               ),
               const SizedBox(height: 24),
@@ -112,7 +113,7 @@ class ReadingStatsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Rata-rata per Sesi', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text(AppLocalizations.of(context)!.avgPerSession, style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Text(
                           '${(totalSeconds / totalSessions / 60).round()} menit',
@@ -136,7 +137,7 @@ class ReadingStatsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Ekspor Data', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(AppLocalizations.of(context)!.exportStats, style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 12),
                       Row(
                         children: [

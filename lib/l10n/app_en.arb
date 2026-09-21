@@ -69,5 +69,14 @@
   "restoring": "Restoring database...",
   "restoreSuccess": "Database restored successfully!",
   "restartApp": "Please restart the app manually.",
-  "backToHome": "Back to Home"
+  "backToHome": "Back to Home",
+  "dailyReadingGoal": "Daily Reading Goal",
+  "goalLabel": "Goal:",
+  "minutes": "min",
+  "minutesPerDay": "min/day",
+  "goalComplete": "Done!",
+  "backupSubtitle": "Save all data to backup file",
+  "restoreSubtitle": "Restore data from backup file",
+  "noChaptersFound": "No chapters found in this book.",
+  "bookArchived": "Book has been archived."
 }

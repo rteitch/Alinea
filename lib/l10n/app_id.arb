@@ -69,5 +69,14 @@
   "restoring": "Memulihkan database...",
   "restoreSuccess": "Database berhasil dipulihkan!",
   "restartApp": "Silakan restart app secara manual.",
-  "backToHome": "Kembali ke Beranda"
+  "backToHome": "Kembali ke Beranda",
+  "dailyReadingGoal": "Target Membaca Harian",
+  "goalLabel": "Target:",
+  "minutes": "menit",
+  "minutesPerDay": "menit/hari",
+  "goalComplete": "Selesai!",
+  "backupSubtitle": "Simpan semua data ke file backup",
+  "restoreSubtitle": "Pulihkan data dari file backup",
+  "noChaptersFound": "Tidak ada bab yang ditemukan dalam buku ini.",
+  "bookArchived": "Buku telah diarsipkan."
 }

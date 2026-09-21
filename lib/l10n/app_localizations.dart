@@ -517,6 +517,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to Home'**
   String get backToHome;
+
+  /// No description provided for @dailyReadingGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Reading Goal'**
+  String get dailyReadingGoal;
+
+  /// No description provided for @goalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal:'**
+  String get goalLabel;
+
+  /// No description provided for @minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get minutes;
+
+  /// No description provided for @minutesPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'min/day'**
+  String get minutesPerDay;
+
+  /// No description provided for @goalComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Done!'**
+  String get goalComplete;
+
+  /// No description provided for @backupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save all data to backup file'**
+  String get backupSubtitle;
+
+  /// No description provided for @restoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore data from backup file'**
+  String get restoreSubtitle;
+
+  /// No description provided for @noChaptersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No chapters found in this book.'**
+  String get noChaptersFound;
+
+  /// No description provided for @bookArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Book has been archived.'**
+  String get bookArchived;
 }
 
 class _AppLocalizationsDelegate

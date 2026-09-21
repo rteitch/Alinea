@@ -228,4 +228,31 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get backToHome => 'Kembali ke Beranda';
+
+  @override
+  String get dailyReadingGoal => 'Target Membaca Harian';
+
+  @override
+  String get goalLabel => 'Target:';
+
+  @override
+  String get minutes => 'menit';
+
+  @override
+  String get minutesPerDay => 'menit/hari';
+
+  @override
+  String get goalComplete => 'Selesai!';
+
+  @override
+  String get backupSubtitle => 'Simpan semua data ke file backup';
+
+  @override
+  String get restoreSubtitle => 'Pulihkan data dari file backup';
+
+  @override
+  String get noChaptersFound => 'Tidak ada bab yang ditemukan dalam buku ini.';
+
+  @override
+  String get bookArchived => 'Buku telah diarsipkan.';
 }

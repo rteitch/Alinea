@@ -11,11 +11,21 @@ import '../../reader/presentation/reading_goal_card.dart';
 import '../../reader/presentation/reader_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 import 'cover_gallery_screen.dart';
+import '../../../l10n/app_localizations.dart';
+import 'collection_dialog.dart';
+
+final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
 final booksListProvider = FutureProvider.autoDispose<List<Book>>((ref) async {
   final repo = ref.watch(bookRepositoryProvider);
   final filter = ref.watch(libraryFilterProvider);
   final sortBy = ref.watch(librarySortProvider);
+  final collectionId = ref.watch(collectionFilterProvider);
+
+  // If a collection filter is active, use it
+  if (collectionId != null) {
+    return await ref.watch(databaseProvider).getBooksInCollection(collectionId);
+  }
 
   switch (filter) {
     case 'in_progress':
@@ -141,7 +151,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ),
             const SizedBox(width: 10),
             Text(
-              'Alinea',
+              AppLocalizations.of(context)!.appTitle,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -157,7 +167,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                'READER',
+                AppLocalizations.of(context)!.appTagline,
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -222,8 +232,61 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
-          ),
-        ],
+              ),
+              // Collection chips
+              Consumer(
+                builder: (context, ref, _) {
+                  final db = ref.watch(databaseProvider);
+                  return FutureBuilder<List<Collection>>(
+                    future: db.getAllCollections(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+                      final colls = snapshot.data!;
+                      final currentCollFilter = ref.watch(collectionFilterProvider);
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: const Text('+ Koleksi', style: TextStyle(fontSize: 12)),
+                                onSelected: (_) async {
+                                  final result = await showDialog<bool>(
+                                    context: context,
+                                    builder: (_) => const CreateCollectionDialog(),
+                                  );
+                                  if (result == true) setState(() {});
+                                },
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                            ...colls.map((col) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(col.name, style: const TextStyle(fontSize: 12)),
+                                selected: currentCollFilter == col.id,
+                                onSelected: (selected) {
+                                  ref.read(collectionFilterProvider.notifier).state =
+                                      selected ? col.id : null;
+                                },
+                                onDeleted: currentCollFilter == col.id ? () async {
+                                  await db.deleteCollection(col.id);
+                                  ref.read(collectionFilterProvider.notifier).state = null;
+                                  setState(() {});
+                                } : null,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            )),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(105),
           child: Column(
@@ -233,7 +296,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Cari judul atau penulis...',
+                    hintText: AppLocalizations.of(context)!.searchHint,
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -253,13 +316,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
-                    _buildFilterChip('Semua', 'all', currentFilter),
+                    _buildFilterChip(AppLocalizations.of(context)!.filterAll, 'all', currentFilter),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Sedang Dibaca', 'in_progress', currentFilter),
+                    _buildFilterChip(AppLocalizations.of(context)!.filterReading, 'in_progress', currentFilter),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Selesai', 'finished', currentFilter),
+                    _buildFilterChip(AppLocalizations.of(context)!.filterFinished, 'finished', currentFilter),
                     const SizedBox(width: 8),
-                    _buildFilterChip('Favorit', 'favorite', currentFilter),
+                    _buildFilterChip(AppLocalizations.of(context)!.filterFavorite, 'favorite', currentFilter),
                   ],
                 ),
               ),
@@ -268,13 +331,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         ),
       ),
        body: _isImporting
-           ? const Center(
+           ? Center(
                child: Column(
                  mainAxisSize: MainAxisSize.min,
                  children: [
                    CircularProgressIndicator(),
                    SizedBox(height: 16),
-                   Text('Sedang memproses & memvalidasi file EPUB...'),
+                    Text(AppLocalizations.of(context)!.importing),
                  ],
                ),
              )
@@ -398,7 +461,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _handleImportEpub,
         icon: const Icon(Icons.add),
-        label: const Text('Import EPUB'),
+        label: Text(AppLocalizations.of(context)!.importEpub),
       ),
     );
   }

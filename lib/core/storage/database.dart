@@ -176,6 +176,30 @@ class ReadingSessions extends Table {
 }
 
 // =========================================================
+// 10. COLLECTIONS (Custom shelves)
+// =========================================================
+class Collections extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  DateTimeColumn get createdAt => dateTime()();
+}
+
+// =========================================================
+// 11. BOOK_COLLECTIONS (Many-to-many junction)
+// =========================================================
+class BookCollections extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get bookId => integer().customConstraint('NOT NULL REFERENCES books(id) ON DELETE CASCADE')();
+  IntColumn get collectionId => integer().customConstraint('NOT NULL REFERENCES collections(id) ON DELETE CASCADE')();
+  DateTimeColumn get addedAt => dateTime()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {bookId, collectionId},
+  ];
+}
+
+// =========================================================
 // DATABASE CLASS
 // =========================================================
 @DriftDatabase(tables: [
@@ -189,6 +213,8 @@ class ReadingSessions extends Table {
   GlossaryTerms,
   BookSettings,
   ReadingSessions,
+  Collections,
+  BookCollections,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -196,7 +222,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -232,6 +258,11 @@ class AppDatabase extends _$AppDatabase {
       // Schema v4 → v5: Add fontFamily column to book_settings
       if (from < 5) {
         await m.addColumn(bookSettings, bookSettings.fontFamily);
+      }
+      // Schema v5 → v6: Add collections and book_collections tables
+      if (from < 6) {
+        await m.createTable(collections);
+        await m.createTable(bookCollections);
       }
     },
     beforeOpen: (details) async {
@@ -390,6 +421,55 @@ class AppDatabase extends _$AppDatabase {
 
     final totalSeconds = sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
     return totalSeconds ~/ 60;
+  }
+
+  // ========== COLLECTIONS ==========
+
+  Future<int> createCollection(String name) async {
+    return into(collections).insert(
+      CollectionsCompanion.insert(
+        name: name,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<List<Collection>> getAllCollections() async {
+    return (select(collections)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  }
+
+  Future<void> deleteCollection(int collectionId) async {
+    await (delete(collections)..where((t) => t.id.equals(collectionId))).go();
+  }
+
+  Future<void> addBookToCollection(int bookId, int collectionId) async {
+    await into(bookCollections).insert(
+      BookCollectionsCompanion.insert(
+        bookId: bookId,
+        collectionId: collectionId,
+        addedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> removeBookFromCollection(int bookId, int collectionId) async {
+    await (delete(bookCollections)
+      ..where((t) => t.bookId.equals(bookId) & t.collectionId.equals(collectionId)))
+      .go();
+  }
+
+  Future<List<int>> getBookCollectionIds(int bookId) async {
+    final rows = await (select(bookCollections)..where((t) => t.bookId.equals(bookId))).get();
+    return rows.map((r) => r.collectionId).toList();
+  }
+
+  Future<List<Book>> getBooksInCollection(int collectionId) async {
+    final bookIds = await (select(bookCollections)
+      ..where((t) => t.collectionId.equals(collectionId)))
+      .get();
+    if (bookIds.isEmpty) return [];
+    final ids = bookIds.map((r) => r.bookId).toList();
+    return (select(books)..where((t) => t.id.isIn(ids))).get();
   }
 }
 

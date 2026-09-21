@@ -228,4 +228,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backToHome => 'Back to Home';
+
+  @override
+  String get dailyReadingGoal => 'Daily Reading Goal';
+
+  @override
+  String get goalLabel => 'Goal:';
+
+  @override
+  String get minutes => 'min';
+
+  @override
+  String get minutesPerDay => 'min/day';
+
+  @override
+  String get goalComplete => 'Done!';
+
+  @override
+  String get backupSubtitle => 'Save all data to backup file';
+
+  @override
+  String get restoreSubtitle => 'Restore data from backup file';
+
+  @override
+  String get noChaptersFound => 'No chapters found in this book.';
+
+  @override
+  String get bookArchived => 'Book has been archived.';
 }
