@@ -14,6 +14,9 @@ import 'cover_gallery_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import 'collection_dialog.dart';
 import 'reading_challenge_screen.dart';
+import 'achievements_screen.dart';
+import 'book_comparison_screen.dart';
+import 'reading_heatmap_screen.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -200,16 +203,32 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               );
             },
           ),
-          // Reading Challenge
-          IconButton(
-            icon: const Icon(Icons.emoji_events_rounded, size: 22),
-            tooltip: 'Tantangan Membaca',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ReadingChallengeScreen()),
-              );
+          // Reading Features menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.insights_rounded, size: 22),
+            tooltip: 'Fitur Membaca',
+            onSelected: (value) {
+              switch (value) {
+                case 'challenges':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingChallengeScreen()));
+                  break;
+                case 'achievements':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AchievementsScreen()));
+                  break;
+                case 'comparison':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const BookComparisonScreen()));
+                  break;
+                case 'heatmap':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingHeatMapScreen()));
+                  break;
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'challenges', child: ListTile(leading: Icon(Icons.emoji_events_rounded), title: Text('Tantangan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'achievements', child: ListTile(leading: Icon(Icons.workspace_premium_rounded), title: Text('Pencapaian'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'comparison', child: ListTile(leading: Icon(Icons.bar_chart_rounded), title: Text('Perbandingan Buku'), dense: true, contentPadding: EdgeInsets.zero)),
+              const PopupMenuItem(value: 'heatmap', child: ListTile(leading: Icon(Icons.local_fire_department_rounded), title: Text('Peta Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
+            ],
           ),
           // View toggle
           IconButton(
