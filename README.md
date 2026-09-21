@@ -22,7 +22,7 @@
 
 <p align="center">
   <a href="https://github.com/rteitch/Alinea/releases/latest/download/app-release.apk">
-    <img src="https://img.shields.io/badge/Download-APK%20v1.16.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+    <img src="https://img.shields.io/badge/Download-APK%20v1.17.0-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
   </a>
 </p>
 
