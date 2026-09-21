@@ -932,6 +932,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
+          // SECTION 5: App Language
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.language_rounded, color: theme.colorScheme.primary),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Bahasa Aplikasi',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pilih bahasa antarmuka aplikasi.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 14),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentLocale = ref.watch(localeProvider);
+                      return Row(
+                        children: [
+                          _buildLanguageChip(context, ref, 'Indonesia', 'id', currentLocale),
+                          const SizedBox(width: 8),
+                          _buildLanguageChip(context, ref, 'English', 'en', currentLocale),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Data Management
           const Text('Manajemen Data', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
@@ -1179,6 +1222,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ref.read(appSettingsProvider.notifier).save(
               ref.read(appSettingsProvider).copyWith(translationStyle: value),
             );
+      },
+    );
+  }
+
+  Widget _buildLanguageChip(BuildContext context, WidgetRef ref, String label, String code, Locale currentLocale) {
+    final isSelected = currentLocale.languageCode == code;
+    return FilterChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      selected: isSelected,
+      onSelected: (_) {
+        ref.read(localeProvider.notifier).state = Locale(code);
       },
     );
   }

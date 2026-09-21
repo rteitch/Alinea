@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers.dart';
 import 'theme/app_theme.dart';
 import '../features/splash/presentation/splash_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class AlineaApp extends ConsumerWidget {
   const AlineaApp({super.key});
@@ -36,6 +38,17 @@ class AlineaApp extends ConsumerWidget {
       title: 'Alinea',
       debugShowCheckedModeBanner: false,
       theme: theme,
+      locale: ref.watch(localeProvider),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('id'),
+      ],
       home: const SplashScreen(),
     );
   }

@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,6 +46,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   // Font family state
   String _fontFamily = 'default';
 
+  // Reading timer state
+  int? _currentSessionId;
+  Timer? _readingTimer;
+  int _elapsedSeconds = 0;
+
   // Bookmarks & Highlights
   List<Bookmark> _bookmarks = [];
   List<Highlight> _highlights = [];
@@ -63,15 +69,55 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     super.initState();
     _loadBookAndProgress();
     _scrollController.addListener(_onScroll);
+    // Start reading session timer
+    _startReadingSession();
   }
 
   @override
   void dispose() {
+    _readingTimer?.cancel();
+    _endReadingSession();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _pageController.dispose();
     ref.read(ttsServiceProvider).stop();
     super.dispose();
+  }
+
+  Future<void> _startReadingSession() async {
+    try {
+      final db = ref.read(databaseProvider);
+      _currentSessionId = await db.startReadingSession(widget.bookId);
+      _readingTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() => _elapsedSeconds++);
+        }
+      });
+    } catch (e) {
+      debugPrint('[ReaderScreen] Failed to start reading session: $e');
+    }
+  }
+
+  Future<void> _endReadingSession() async {
+    if (_currentSessionId == null) return;
+    try {
+      final db = ref.read(databaseProvider);
+      await db.endReadingSession(
+        _currentSessionId!,
+        chaptersRead: _currentChapterIndex + 1,
+        wordsTranslated: 0,
+      );
+    } catch (e) {
+      debugPrint('[ReaderScreen] Failed to end reading session: $e');
+    }
+  }
+
+  String _formatElapsed(int totalSeconds) {
+    final h = totalSeconds ~/ 3600;
+    final m = (totalSeconds % 3600) ~/ 60;
+    final s = totalSeconds % 60;
+    if (h > 0) return '${h}j ${m.toString().padLeft(2, '0')}m';
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadBookAndProgress() async {
@@ -1437,6 +1483,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            if (_elapsedSeconds > 0)
+              Text(
+                '⏱ ${_formatElapsed(_elapsedSeconds)}',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+              ),
           ],
         ),
         actions: [

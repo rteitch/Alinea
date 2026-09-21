@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/tts_service.dart';
 import '../core/storage/database.dart';
@@ -135,6 +136,11 @@ final libraryViewModeProvider = StateProvider<String>((ref) {
 
 final librarySortProvider = StateProvider<String>((ref) {
   return 'date_added'; // 'date_added', 'title', 'author', 'progress', 'last_opened'
+});
+
+// Locale provider for multi-language support
+final localeProvider = StateProvider<Locale>((ref) {
+  return const Locale('id'); // Default to Indonesian
 });
 
 // Book Settings (per-book reader preferences)

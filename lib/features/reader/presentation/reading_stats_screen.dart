@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
 
 class ReadingStatsScreen extends ConsumerWidget {
@@ -19,6 +25,14 @@ class ReadingStatsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistik Membaca'),
+        actions: [
+          // Export button
+          IconButton(
+            icon: const Icon(Icons.ios_share_rounded, size: 20),
+            tooltip: 'Ekspor Statistik',
+            onPressed: () => _exportStats(context, ref),
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, int>>(
         future: db.getReadingStats(bookId),
@@ -112,11 +126,148 @@ class ReadingStatsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+
+              const SizedBox(height: 16),
+
+              // Export options
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Ekspor Data', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _exportAsCSV(context, ref),
+                              icon: const Icon(Icons.table_chart_rounded, size: 16),
+                              label: const Text('CSV'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => _exportAsJSON(context, ref),
+                              icon: const Icon(Icons.code_rounded, size: 16),
+                              label: const Text('JSON'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _exportStats(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    final sessions = await db.getReadingSessions(bookId);
+
+    final rows = <List<String>>[
+      ['Tanggal', 'Durasi (detik)', 'Bab Dibaca', 'Kata Diterjemahkan'],
+      for (final s in sessions)
+        [
+          s.startedAt.toIso8601String(),
+          '${s.durationSeconds}',
+          '${s.chaptersRead}',
+          '${s.wordsTranslated}',
+        ],
+    ];
+
+    final csv = const ListToCsvConverter().convert(rows);
+    final jsonStr = jsonEncode({
+      'book': bookTitle,
+      'bookId': bookId,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'sessions': sessions
+          .map((s) => {
+                'startedAt': s.startedAt.toIso8601String(),
+                'endedAt': s.endedAt?.toIso8601String(),
+                'durationSeconds': s.durationSeconds,
+                'chaptersRead': s.chaptersRead,
+                'wordsTranslated': s.wordsTranslated,
+              })
+          .toList(),
+    });
+
+    final dir = await getApplicationDocumentsDirectory();
+    final csvFile = File('${dir.path}/stats_${bookId}.csv');
+    final jsonFile = File('${dir.path}/stats_${bookId}.json');
+    await csvFile.writeAsString(csv);
+    await jsonFile.writeAsString(jsonStr);
+
+    if (context.mounted) {
+      await Share.shareXFiles(
+        [XFile(csvFile.path), XFile(jsonFile.path)],
+        text: 'Statistik membaca: $bookTitle',
+      );
+    }
+  }
+
+  Future<void> _exportAsCSV(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    final sessions = await db.getReadingSessions(bookId);
+
+    final rows = <List<String>>[
+      ['Tanggal', 'Durasi (detik)', 'Bab Dibaca', 'Kata Diterjemahkan'],
+      for (final s in sessions)
+        [
+          s.startedAt.toIso8601String(),
+          '${s.durationSeconds}',
+          '${s.chaptersRead}',
+          '${s.wordsTranslated}',
+        ],
+    ];
+
+    final csv = const ListToCsvConverter().convert(rows);
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/stats_${bookId}.csv');
+    await file.writeAsString(csv);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CSV tersimpan: ${file.path}')),
+      );
+    }
+  }
+
+  Future<void> _exportAsJSON(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    final sessions = await db.getReadingSessions(bookId);
+
+    final jsonStr = jsonEncode({
+      'book': bookTitle,
+      'bookId': bookId,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'sessions': sessions
+          .map((s) => {
+                'startedAt': s.startedAt.toIso8601String(),
+                'endedAt': s.endedAt?.toIso8601String(),
+                'durationSeconds': s.durationSeconds,
+                'chaptersRead': s.chaptersRead,
+                'wordsTranslated': s.wordsTranslated,
+              })
+          .toList(),
+    });
+
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File('${dir.path}/stats_${bookId}.json');
+    await file.writeAsString(jsonStr);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('JSON tersimpan: ${file.path}')),
+      );
+    }
   }
 
   Widget _buildStatCard(BuildContext context, IconData icon, String label, String value, Color color) {
