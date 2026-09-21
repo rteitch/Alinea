@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../app/providers.dart';
 import '../../../l10n/app_localizations.dart';
+import 'session_history_screen.dart';
 
 class ReadingStatsScreen extends ConsumerWidget {
   final int bookId;
@@ -32,6 +33,22 @@ class ReadingStatsScreen extends ConsumerWidget {
             icon: const Icon(Icons.ios_share_rounded, size: 20),
             tooltip: AppLocalizations.of(context)!.exportStats,
             onPressed: () => _exportStats(context, ref),
+          ),
+          // Session history button
+          IconButton(
+            icon: const Icon(Icons.history_rounded, size: 20),
+            tooltip: 'Riwayat Sesi',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SessionHistoryScreen(
+                    bookId: bookId,
+                    bookTitle: bookTitle,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -102,6 +119,40 @@ class ReadingStatsScreen extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(child: _buildStatCard(context, Icons.fiber_manual_record_rounded, AppLocalizations.of(context)!.totalSessions, '$totalSessions', Colors.purple)),
                 ],
+              ),
+              const SizedBox(height: 24),
+
+              // Reading speed (WPM)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.speed_rounded, size: 16, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 6),
+                          Text('Kecepatan Membaca', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      FutureBuilder<double>(
+                        future: db.getAverageWpm(bookId),
+                        builder: (context, snapshot) {
+                          final wpm = snapshot.data ?? 0;
+                          return Text(
+                            '${wpm.toStringAsFixed(0)} kata/menit',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
 

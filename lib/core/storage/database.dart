@@ -173,6 +173,7 @@ class ReadingSessions extends Table {
   IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
   IntColumn get chaptersRead => integer().withDefault(const Constant(0))();
   IntColumn get wordsTranslated => integer().withDefault(const Constant(0))();
+  IntColumn get wordsRead => integer().withDefault(const Constant(0))();
 }
 
 // =========================================================
@@ -222,7 +223,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -263,6 +264,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 6) {
         await m.createTable(collections);
         await m.createTable(bookCollections);
+      }
+      // Schema v6 → v7: Add wordsRead column to reading_sessions
+      if (from < 7) {
+        await m.addColumn(readingSessions, readingSessions.wordsRead);
       }
     },
     beforeOpen: (details) async {
@@ -334,7 +339,7 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  Future<void> endReadingSession(int sessionId, {int chaptersRead = 0, int wordsTranslated = 0}) async {
+  Future<void> endReadingSession(int sessionId, {int chaptersRead = 0, int wordsTranslated = 0, int wordsRead = 0}) async {
     final session = await (select(readingSessions)..where((t) => t.id.equals(sessionId))).getSingleOrNull();
     if (session == null) return;
 
@@ -345,6 +350,7 @@ class AppDatabase extends _$AppDatabase {
         durationSeconds: Value(duration),
         chaptersRead: Value(chaptersRead),
         wordsTranslated: Value(wordsTranslated),
+        wordsRead: Value(wordsRead),
       ),
     );
   }
@@ -470,6 +476,44 @@ class AppDatabase extends _$AppDatabase {
     if (bookIds.isEmpty) return [];
     final ids = bookIds.map((r) => r.bookId).toList();
     return (select(books)..where((t) => t.id.isIn(ids))).get();
+  }
+
+  // ========== WPM & SESSION ==========
+
+  Future<void> updateReadingSession(
+    int sessionId, {
+    DateTime? endedAt,
+    int? durationSeconds,
+    int? wordsRead,
+  }) async {
+    await (update(readingSessions)..where((t) => t.id.equals(sessionId))).write(
+      ReadingSessionsCompanion(
+        endedAt: endedAt != null ? Value(endedAt) : const Value.absent(),
+        durationSeconds: durationSeconds != null ? Value(durationSeconds) : const Value.absent(),
+        wordsRead: wordsRead != null ? Value(wordsRead) : const Value.absent(),
+      ),
+    );
+  }
+
+  Future<double> getAverageWpm(int bookId) async {
+    final sessions = await (select(readingSessions)
+          ..where((t) => t.bookId.equals(bookId) & t.durationSeconds.isBiggerThanValue(0)))
+        .get();
+
+    if (sessions.isEmpty) return 0;
+
+    final totalWords = sessions.fold<int>(0, (sum, s) => sum + s.wordsRead);
+    final totalSeconds = sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+
+    if (totalSeconds == 0) return 0;
+    return (totalWords / totalSeconds) * 60;
+  }
+
+  Future<List<Chapter>> getChaptersForBook(int bookId) async {
+    return (select(chapters)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([(t) => OrderingTerm.asc(t.spineIndex)]))
+        .get();
   }
 }
 

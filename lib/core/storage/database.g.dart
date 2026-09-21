@@ -5445,6 +5445,18 @@ class $ReadingSessionsTable extends ReadingSessions
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _wordsReadMeta = const VerificationMeta(
+    'wordsRead',
+  );
+  @override
+  late final GeneratedColumn<int> wordsRead = GeneratedColumn<int>(
+    'words_read',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -5454,6 +5466,7 @@ class $ReadingSessionsTable extends ReadingSessions
     durationSeconds,
     chaptersRead,
     wordsTranslated,
+    wordsRead,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5519,6 +5532,12 @@ class $ReadingSessionsTable extends ReadingSessions
         ),
       );
     }
+    if (data.containsKey('words_read')) {
+      context.handle(
+        _wordsReadMeta,
+        wordsRead.isAcceptableOrUnknown(data['words_read']!, _wordsReadMeta),
+      );
+    }
     return context;
   }
 
@@ -5556,6 +5575,10 @@ class $ReadingSessionsTable extends ReadingSessions
         DriftSqlType.int,
         data['${effectivePrefix}words_translated'],
       )!,
+      wordsRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}words_read'],
+      )!,
     );
   }
 
@@ -5573,6 +5596,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
   final int durationSeconds;
   final int chaptersRead;
   final int wordsTranslated;
+  final int wordsRead;
   const ReadingSession({
     required this.id,
     required this.bookId,
@@ -5581,6 +5605,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     required this.durationSeconds,
     required this.chaptersRead,
     required this.wordsTranslated,
+    required this.wordsRead,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5594,6 +5619,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     map['duration_seconds'] = Variable<int>(durationSeconds);
     map['chapters_read'] = Variable<int>(chaptersRead);
     map['words_translated'] = Variable<int>(wordsTranslated);
+    map['words_read'] = Variable<int>(wordsRead);
     return map;
   }
 
@@ -5608,6 +5634,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
       durationSeconds: Value(durationSeconds),
       chaptersRead: Value(chaptersRead),
       wordsTranslated: Value(wordsTranslated),
+      wordsRead: Value(wordsRead),
     );
   }
 
@@ -5624,6 +5651,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
       durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
       chaptersRead: serializer.fromJson<int>(json['chaptersRead']),
       wordsTranslated: serializer.fromJson<int>(json['wordsTranslated']),
+      wordsRead: serializer.fromJson<int>(json['wordsRead']),
     );
   }
   @override
@@ -5637,6 +5665,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
       'durationSeconds': serializer.toJson<int>(durationSeconds),
       'chaptersRead': serializer.toJson<int>(chaptersRead),
       'wordsTranslated': serializer.toJson<int>(wordsTranslated),
+      'wordsRead': serializer.toJson<int>(wordsRead),
     };
   }
 
@@ -5648,6 +5677,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     int? durationSeconds,
     int? chaptersRead,
     int? wordsTranslated,
+    int? wordsRead,
   }) => ReadingSession(
     id: id ?? this.id,
     bookId: bookId ?? this.bookId,
@@ -5656,6 +5686,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     durationSeconds: durationSeconds ?? this.durationSeconds,
     chaptersRead: chaptersRead ?? this.chaptersRead,
     wordsTranslated: wordsTranslated ?? this.wordsTranslated,
+    wordsRead: wordsRead ?? this.wordsRead,
   );
   ReadingSession copyWithCompanion(ReadingSessionsCompanion data) {
     return ReadingSession(
@@ -5672,6 +5703,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
       wordsTranslated: data.wordsTranslated.present
           ? data.wordsTranslated.value
           : this.wordsTranslated,
+      wordsRead: data.wordsRead.present ? data.wordsRead.value : this.wordsRead,
     );
   }
 
@@ -5684,7 +5716,8 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
           ..write('endedAt: $endedAt, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('chaptersRead: $chaptersRead, ')
-          ..write('wordsTranslated: $wordsTranslated')
+          ..write('wordsTranslated: $wordsTranslated, ')
+          ..write('wordsRead: $wordsRead')
           ..write(')'))
         .toString();
   }
@@ -5698,6 +5731,7 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
     durationSeconds,
     chaptersRead,
     wordsTranslated,
+    wordsRead,
   );
   @override
   bool operator ==(Object other) =>
@@ -5709,7 +5743,8 @@ class ReadingSession extends DataClass implements Insertable<ReadingSession> {
           other.endedAt == this.endedAt &&
           other.durationSeconds == this.durationSeconds &&
           other.chaptersRead == this.chaptersRead &&
-          other.wordsTranslated == this.wordsTranslated);
+          other.wordsTranslated == this.wordsTranslated &&
+          other.wordsRead == this.wordsRead);
 }
 
 class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
@@ -5720,6 +5755,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
   final Value<int> durationSeconds;
   final Value<int> chaptersRead;
   final Value<int> wordsTranslated;
+  final Value<int> wordsRead;
   const ReadingSessionsCompanion({
     this.id = const Value.absent(),
     this.bookId = const Value.absent(),
@@ -5728,6 +5764,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     this.durationSeconds = const Value.absent(),
     this.chaptersRead = const Value.absent(),
     this.wordsTranslated = const Value.absent(),
+    this.wordsRead = const Value.absent(),
   });
   ReadingSessionsCompanion.insert({
     this.id = const Value.absent(),
@@ -5737,6 +5774,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     this.durationSeconds = const Value.absent(),
     this.chaptersRead = const Value.absent(),
     this.wordsTranslated = const Value.absent(),
+    this.wordsRead = const Value.absent(),
   }) : bookId = Value(bookId),
        startedAt = Value(startedAt);
   static Insertable<ReadingSession> custom({
@@ -5747,6 +5785,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     Expression<int>? durationSeconds,
     Expression<int>? chaptersRead,
     Expression<int>? wordsTranslated,
+    Expression<int>? wordsRead,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -5756,6 +5795,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
       if (durationSeconds != null) 'duration_seconds': durationSeconds,
       if (chaptersRead != null) 'chapters_read': chaptersRead,
       if (wordsTranslated != null) 'words_translated': wordsTranslated,
+      if (wordsRead != null) 'words_read': wordsRead,
     });
   }
 
@@ -5767,6 +5807,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     Value<int>? durationSeconds,
     Value<int>? chaptersRead,
     Value<int>? wordsTranslated,
+    Value<int>? wordsRead,
   }) {
     return ReadingSessionsCompanion(
       id: id ?? this.id,
@@ -5776,6 +5817,7 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
       durationSeconds: durationSeconds ?? this.durationSeconds,
       chaptersRead: chaptersRead ?? this.chaptersRead,
       wordsTranslated: wordsTranslated ?? this.wordsTranslated,
+      wordsRead: wordsRead ?? this.wordsRead,
     );
   }
 
@@ -5803,6 +5845,9 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
     if (wordsTranslated.present) {
       map['words_translated'] = Variable<int>(wordsTranslated.value);
     }
+    if (wordsRead.present) {
+      map['words_read'] = Variable<int>(wordsRead.value);
+    }
     return map;
   }
 
@@ -5815,7 +5860,8 @@ class ReadingSessionsCompanion extends UpdateCompanion<ReadingSession> {
           ..write('endedAt: $endedAt, ')
           ..write('durationSeconds: $durationSeconds, ')
           ..write('chaptersRead: $chaptersRead, ')
-          ..write('wordsTranslated: $wordsTranslated')
+          ..write('wordsTranslated: $wordsTranslated, ')
+          ..write('wordsRead: $wordsRead')
           ..write(')'))
         .toString();
   }
@@ -11607,6 +11653,7 @@ typedef $$ReadingSessionsTableCreateCompanionBuilder =
       Value<int> durationSeconds,
       Value<int> chaptersRead,
       Value<int> wordsTranslated,
+      Value<int> wordsRead,
     });
 typedef $$ReadingSessionsTableUpdateCompanionBuilder =
     ReadingSessionsCompanion Function({
@@ -11617,6 +11664,7 @@ typedef $$ReadingSessionsTableUpdateCompanionBuilder =
       Value<int> durationSeconds,
       Value<int> chaptersRead,
       Value<int> wordsTranslated,
+      Value<int> wordsRead,
     });
 
 final class $$ReadingSessionsTableReferences
@@ -11686,6 +11734,11 @@ class $$ReadingSessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get wordsRead => $composableBuilder(
+    column: $table.wordsRead,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$BooksTableFilterComposer get bookId {
     final $$BooksTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -11749,6 +11802,11 @@ class $$ReadingSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get wordsRead => $composableBuilder(
+    column: $table.wordsRead,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$BooksTableOrderingComposer get bookId {
     final $$BooksTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -11805,6 +11863,9 @@ class $$ReadingSessionsTableAnnotationComposer
     column: $table.wordsTranslated,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get wordsRead =>
+      $composableBuilder(column: $table.wordsRead, builder: (column) => column);
 
   $$BooksTableAnnotationComposer get bookId {
     final $$BooksTableAnnotationComposer composer = $composerBuilder(
@@ -11867,6 +11928,7 @@ class $$ReadingSessionsTableTableManager
                 Value<int> durationSeconds = const Value.absent(),
                 Value<int> chaptersRead = const Value.absent(),
                 Value<int> wordsTranslated = const Value.absent(),
+                Value<int> wordsRead = const Value.absent(),
               }) => ReadingSessionsCompanion(
                 id: id,
                 bookId: bookId,
@@ -11875,6 +11937,7 @@ class $$ReadingSessionsTableTableManager
                 durationSeconds: durationSeconds,
                 chaptersRead: chaptersRead,
                 wordsTranslated: wordsTranslated,
+                wordsRead: wordsRead,
               ),
           createCompanionCallback:
               ({
@@ -11885,6 +11948,7 @@ class $$ReadingSessionsTableTableManager
                 Value<int> durationSeconds = const Value.absent(),
                 Value<int> chaptersRead = const Value.absent(),
                 Value<int> wordsTranslated = const Value.absent(),
+                Value<int> wordsRead = const Value.absent(),
               }) => ReadingSessionsCompanion.insert(
                 id: id,
                 bookId: bookId,
@@ -11893,6 +11957,7 @@ class $$ReadingSessionsTableTableManager
                 durationSeconds: durationSeconds,
                 chaptersRead: chaptersRead,
                 wordsTranslated: wordsTranslated,
+                wordsRead: wordsRead,
               ),
           withReferenceMapper: (p0) => p0
               .map(

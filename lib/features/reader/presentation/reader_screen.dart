@@ -103,10 +103,19 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     if (_currentSessionId == null) return;
     try {
       final db = ref.read(databaseProvider);
+      // Estimate words read from current chapter
+      int wordsRead = 0;
+      try {
+        final chapters = await db.getChaptersForBook(widget.bookId);
+        if (chapters.isNotEmpty && _currentChapterIndex < chapters.length) {
+          wordsRead = chapters[_currentChapterIndex].wordCount ?? 0;
+        }
+      } catch (_) {}
       await db.endReadingSession(
         _currentSessionId!,
         chaptersRead: _currentChapterIndex + 1,
         wordsTranslated: 0,
+        wordsRead: wordsRead,
       );
     } catch (e) {
       debugPrint('[ReaderScreen] Failed to end reading session: $e');
