@@ -362,6 +362,12 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  Future<List<ReadingSession>> getAllReadingSessions() async {
+    return (select(readingSessions)
+          ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]))
+        .get();
+  }
+
   Future<int> getTotalReadingTimeSeconds(int bookId) async {
     final sessions = await getReadingSessions(bookId);
     return sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);

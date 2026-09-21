@@ -13,6 +13,7 @@ import '../../settings/presentation/settings_screen.dart';
 import 'cover_gallery_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import 'collection_dialog.dart';
+import 'reading_challenge_screen.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
 
@@ -196,6 +197,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         ref.read(appSettingsProvider).copyWith(readingTheme: next.name),
                       );
                 },
+              );
+            },
+          ),
+          // Reading Challenge
+          IconButton(
+            icon: const Icon(Icons.emoji_events_rounded, size: 22),
+            tooltip: 'Tantangan Membaca',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReadingChallengeScreen()),
               );
             },
           ),

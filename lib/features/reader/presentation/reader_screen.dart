@@ -10,6 +10,7 @@ import '../../../core/storage/database.dart';
 import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
 import 'reading_stats_screen.dart';
+import 'book_notes_exporter.dart';
 import 'translation_overlay.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -1545,8 +1546,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           // Search in Book
           IconButton(
             icon: const Icon(Icons.search_rounded, size: 20),
-            tooltip: 'Cari dalam Buku',
+            tooltip: AppLocalizations.of(context)!.searchInBook,
             onPressed: _showSearchInBook,
+          ),
+          // Export Notes
+          IconButton(
+            icon: const Icon(Icons.note_add_rounded, size: 20),
+            tooltip: 'Ekspor Catatan',
+            onPressed: () async {
+              final exporter = BookNotesExporter(ref.read(databaseProvider));
+              await exporter.exportAndShare(widget.bookId, _book?.title ?? 'book');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Catatan berhasil diekspor!')),
+                );
+              }
+            },
           ),
           // Inline Page Translation Toggle (Terjemahkan Langsung Halaman Ini)
           IconButton(
