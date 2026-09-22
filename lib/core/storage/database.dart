@@ -26,6 +26,7 @@ class Books extends Table {
   TextColumn get readingStatus => text().withDefault(const Constant('unread'))();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  IntColumn get rating => integer().nullable()();
   DateTimeColumn get addedAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get lastOpenedAt => dateTime().nullable()();
@@ -224,7 +225,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -273,6 +274,10 @@ class AppDatabase extends _$AppDatabase {
       // Schema v7 → v8: Add dailyGoalMinutes column to book_settings
       if (from < 8) {
         await m.addColumn(bookSettings, bookSettings.dailyGoalMinutes);
+      }
+      // Schema v8 → v9: Add rating column to books
+      if (from < 9) {
+        await m.addColumn(books, books.rating);
       }
     },
     beforeOpen: (details) async {

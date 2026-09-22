@@ -189,6 +189,15 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<int> rating = GeneratedColumn<int>(
+    'rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _addedAtMeta = const VerificationMeta(
     'addedAt',
   );
@@ -240,6 +249,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
     readingStatus,
     isFavorite,
     isArchived,
+    rating,
     addedAt,
     updatedAt,
     lastOpenedAt,
@@ -369,6 +379,12 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
+    }
     if (data.containsKey('added_at')) {
       context.handle(
         _addedAtMeta,
@@ -467,6 +483,10 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rating'],
+      ),
       addedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}added_at'],
@@ -505,6 +525,7 @@ class Book extends DataClass implements Insertable<Book> {
   final String readingStatus;
   final bool isFavorite;
   final bool isArchived;
+  final int? rating;
   final DateTime addedAt;
   final DateTime updatedAt;
   final DateTime? lastOpenedAt;
@@ -525,6 +546,7 @@ class Book extends DataClass implements Insertable<Book> {
     required this.readingStatus,
     required this.isFavorite,
     required this.isArchived,
+    this.rating,
     required this.addedAt,
     required this.updatedAt,
     this.lastOpenedAt,
@@ -564,6 +586,9 @@ class Book extends DataClass implements Insertable<Book> {
     map['reading_status'] = Variable<String>(readingStatus);
     map['is_favorite'] = Variable<bool>(isFavorite);
     map['is_archived'] = Variable<bool>(isArchived);
+    if (!nullToAbsent || rating != null) {
+      map['rating'] = Variable<int>(rating);
+    }
     map['added_at'] = Variable<DateTime>(addedAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || lastOpenedAt != null) {
@@ -604,6 +629,9 @@ class Book extends DataClass implements Insertable<Book> {
       readingStatus: Value(readingStatus),
       isFavorite: Value(isFavorite),
       isArchived: Value(isArchived),
+      rating: rating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rating),
       addedAt: Value(addedAt),
       updatedAt: Value(updatedAt),
       lastOpenedAt: lastOpenedAt == null && nullToAbsent
@@ -634,6 +662,7 @@ class Book extends DataClass implements Insertable<Book> {
       readingStatus: serializer.fromJson<String>(json['readingStatus']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      rating: serializer.fromJson<int?>(json['rating']),
       addedAt: serializer.fromJson<DateTime>(json['addedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       lastOpenedAt: serializer.fromJson<DateTime?>(json['lastOpenedAt']),
@@ -659,6 +688,7 @@ class Book extends DataClass implements Insertable<Book> {
       'readingStatus': serializer.toJson<String>(readingStatus),
       'isFavorite': serializer.toJson<bool>(isFavorite),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'rating': serializer.toJson<int?>(rating),
       'addedAt': serializer.toJson<DateTime>(addedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'lastOpenedAt': serializer.toJson<DateTime?>(lastOpenedAt),
@@ -682,6 +712,7 @@ class Book extends DataClass implements Insertable<Book> {
     String? readingStatus,
     bool? isFavorite,
     bool? isArchived,
+    Value<int?> rating = const Value.absent(),
     DateTime? addedAt,
     DateTime? updatedAt,
     Value<DateTime?> lastOpenedAt = const Value.absent(),
@@ -706,6 +737,7 @@ class Book extends DataClass implements Insertable<Book> {
     readingStatus: readingStatus ?? this.readingStatus,
     isFavorite: isFavorite ?? this.isFavorite,
     isArchived: isArchived ?? this.isArchived,
+    rating: rating.present ? rating.value : this.rating,
     addedAt: addedAt ?? this.addedAt,
     updatedAt: updatedAt ?? this.updatedAt,
     lastOpenedAt: lastOpenedAt.present ? lastOpenedAt.value : this.lastOpenedAt,
@@ -740,6 +772,7 @@ class Book extends DataClass implements Insertable<Book> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      rating: data.rating.present ? data.rating.value : this.rating,
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       lastOpenedAt: data.lastOpenedAt.present
@@ -767,6 +800,7 @@ class Book extends DataClass implements Insertable<Book> {
           ..write('readingStatus: $readingStatus, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('isArchived: $isArchived, ')
+          ..write('rating: $rating, ')
           ..write('addedAt: $addedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastOpenedAt: $lastOpenedAt')
@@ -792,6 +826,7 @@ class Book extends DataClass implements Insertable<Book> {
     readingStatus,
     isFavorite,
     isArchived,
+    rating,
     addedAt,
     updatedAt,
     lastOpenedAt,
@@ -816,6 +851,7 @@ class Book extends DataClass implements Insertable<Book> {
           other.readingStatus == this.readingStatus &&
           other.isFavorite == this.isFavorite &&
           other.isArchived == this.isArchived &&
+          other.rating == this.rating &&
           other.addedAt == this.addedAt &&
           other.updatedAt == this.updatedAt &&
           other.lastOpenedAt == this.lastOpenedAt);
@@ -838,6 +874,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
   final Value<String> readingStatus;
   final Value<bool> isFavorite;
   final Value<bool> isArchived;
+  final Value<int?> rating;
   final Value<DateTime> addedAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> lastOpenedAt;
@@ -858,6 +895,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     this.readingStatus = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.rating = const Value.absent(),
     this.addedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.lastOpenedAt = const Value.absent(),
@@ -879,6 +917,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     this.readingStatus = const Value.absent(),
     this.isFavorite = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.rating = const Value.absent(),
     required DateTime addedAt,
     required DateTime updatedAt,
     this.lastOpenedAt = const Value.absent(),
@@ -905,6 +944,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     Expression<String>? readingStatus,
     Expression<bool>? isFavorite,
     Expression<bool>? isArchived,
+    Expression<int>? rating,
     Expression<DateTime>? addedAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? lastOpenedAt,
@@ -926,6 +966,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
       if (readingStatus != null) 'reading_status': readingStatus,
       if (isFavorite != null) 'is_favorite': isFavorite,
       if (isArchived != null) 'is_archived': isArchived,
+      if (rating != null) 'rating': rating,
       if (addedAt != null) 'added_at': addedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (lastOpenedAt != null) 'last_opened_at': lastOpenedAt,
@@ -949,6 +990,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     Value<String>? readingStatus,
     Value<bool>? isFavorite,
     Value<bool>? isArchived,
+    Value<int?>? rating,
     Value<DateTime>? addedAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? lastOpenedAt,
@@ -970,6 +1012,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
       readingStatus: readingStatus ?? this.readingStatus,
       isFavorite: isFavorite ?? this.isFavorite,
       isArchived: isArchived ?? this.isArchived,
+      rating: rating ?? this.rating,
       addedAt: addedAt ?? this.addedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
@@ -1027,6 +1070,9 @@ class BooksCompanion extends UpdateCompanion<Book> {
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
     }
+    if (rating.present) {
+      map['rating'] = Variable<int>(rating.value);
+    }
     if (addedAt.present) {
       map['added_at'] = Variable<DateTime>(addedAt.value);
     }
@@ -1058,6 +1104,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
           ..write('readingStatus: $readingStatus, ')
           ..write('isFavorite: $isFavorite, ')
           ..write('isArchived: $isArchived, ')
+          ..write('rating: $rating, ')
           ..write('addedAt: $addedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastOpenedAt: $lastOpenedAt')
@@ -6640,6 +6687,7 @@ typedef $$BooksTableCreateCompanionBuilder =
       Value<String> readingStatus,
       Value<bool> isFavorite,
       Value<bool> isArchived,
+      Value<int?> rating,
       required DateTime addedAt,
       required DateTime updatedAt,
       Value<DateTime?> lastOpenedAt,
@@ -6662,6 +6710,7 @@ typedef $$BooksTableUpdateCompanionBuilder =
       Value<String> readingStatus,
       Value<bool> isFavorite,
       Value<bool> isArchived,
+      Value<int?> rating,
       Value<DateTime> addedAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> lastOpenedAt,
@@ -6908,6 +6957,11 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rating => $composableBuilder(
+    column: $table.rating,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7216,6 +7270,11 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get addedAt => $composableBuilder(
     column: $table.addedAt,
     builder: (column) => ColumnOrderings(column),
@@ -7300,6 +7359,9 @@ class $$BooksTableAnnotationComposer
     column: $table.isArchived,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
 
   GeneratedColumn<DateTime> get addedAt =>
       $composableBuilder(column: $table.addedAt, builder: (column) => column);
@@ -7566,6 +7628,7 @@ class $$BooksTableTableManager
                 Value<String> readingStatus = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<int?> rating = const Value.absent(),
                 Value<DateTime> addedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
@@ -7586,6 +7649,7 @@ class $$BooksTableTableManager
                 readingStatus: readingStatus,
                 isFavorite: isFavorite,
                 isArchived: isArchived,
+                rating: rating,
                 addedAt: addedAt,
                 updatedAt: updatedAt,
                 lastOpenedAt: lastOpenedAt,
@@ -7608,6 +7672,7 @@ class $$BooksTableTableManager
                 Value<String> readingStatus = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<int?> rating = const Value.absent(),
                 required DateTime addedAt,
                 required DateTime updatedAt,
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
@@ -7628,6 +7693,7 @@ class $$BooksTableTableManager
                 readingStatus: readingStatus,
                 isFavorite: isFavorite,
                 isArchived: isArchived,
+                rating: rating,
                 addedAt: addedAt,
                 updatedAt: updatedAt,
                 lastOpenedAt: lastOpenedAt,

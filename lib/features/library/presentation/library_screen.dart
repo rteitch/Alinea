@@ -291,6 +291,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               const PopupMenuItem(value: 'title', child: Text('Judul (A-Z)')),
               const PopupMenuItem(value: 'author', child: Text('Penulis (A-Z)')),
               const PopupMenuItem(value: 'last_opened', child: Text('Terakhir Dibuka')),
+              const PopupMenuItem(value: 'rating', child: Text('Rating Tertinggi')),
             ],
           ),
           IconButton(
@@ -450,6 +451,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                   await repo.toggleFavorite(book.id);
                                   ref.invalidate(booksListProvider);
                                 },
+                                onRate: () => _showRateDialog(book),
                               );
                             },
                           ),
@@ -500,6 +502,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 await repo.toggleFavorite(book.id);
                                 ref.invalidate(booksListProvider);
                               },
+                              onRate: () => _showRateDialog(book),
                               onArchive: () async {
                                 final repo = ref.read(bookRepositoryProvider);
                                 await repo.archiveBook(book.id);
@@ -626,6 +629,56 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
+  Future<void> _showRateDialog(Book book) async {
+    int selected = book.rating ?? 0;
+    final result = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('Beri Rating', style: Theme.of(dialogContext).textTheme.titleMedium),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(book.title, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final filled = i < selected;
+                  return IconButton(
+                    icon: Icon(filled ? Icons.star_rounded : Icons.star_outline_rounded, size: 36),
+                    color: filled ? Colors.amber : Colors.grey.shade400,
+                    onPressed: () => setDialogState(() => selected = i + 1),
+                  );
+                }),
+              ),
+              if (selected > 0)
+                TextButton(
+                  onPressed: () => setDialogState(() => selected = 0),
+                  child: const Text('Hapus Rating'),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, selected),
+              child: const Text('Simpan'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      final repo = ref.read(bookRepositoryProvider);
+      await repo.updateRating(book.id, result == 0 ? null : result);
+      ref.invalidate(booksListProvider);
+    }
+  }
+
   Widget _buildFilterChip(String label, String value, String currentFilter) {
     final isSelected = currentFilter == value;
     final theme = Theme.of(context);
@@ -717,6 +770,7 @@ class _BookCard extends ConsumerWidget {
   final Book book;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
+  final VoidCallback onRate;
   final VoidCallback onArchive;
   final VoidCallback? onCoverTap;
 
@@ -724,6 +778,7 @@ class _BookCard extends ConsumerWidget {
     required this.book,
     required this.onTap,
     required this.onFavoriteToggle,
+    required this.onRate,
     required this.onArchive,
     this.onCoverTap,
   });
@@ -832,6 +887,19 @@ class _BookCard extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                           ),
+                        GestureDetector(
+                          onTap: onRate,
+                          child: Row(
+                            children: List.generate(5, (i) {
+                              final filled = book.rating != null && i < book.rating!;
+                              return Icon(
+                                filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                                size: 13,
+                                color: filled ? Colors.amber : Colors.grey.shade400,
+                              );
+                            }),
+                          ),
+                        ),
                       ],
                     ),
                     progressAsync.when(
@@ -915,11 +983,13 @@ class _BookListTile extends ConsumerWidget {
   final Book book;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
+  final VoidCallback onRate;
 
   const _BookListTile({
     required this.book,
     required this.onTap,
     required this.onFavoriteToggle,
+    required this.onRate,
   });
 
   @override
@@ -980,6 +1050,20 @@ class _BookListTile extends ConsumerWidget {
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                     ],
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: onRate,
+                      child: Row(
+                        children: List.generate(5, (i) {
+                          final filled = book.rating != null && i < book.rating!;
+                          return Icon(
+                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 16,
+                            color: filled ? Colors.amber : Colors.grey.shade400,
+                          );
+                        }),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     progressAsync.when(
                       data: (pct) {

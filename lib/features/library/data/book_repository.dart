@@ -153,6 +153,12 @@ class BookRepository {
       case 'last_opened':
         query.orderBy([(t) => OrderingTerm.desc(t.lastOpenedAt)]);
         break;
+      case 'rating':
+        query.orderBy([
+          (t) => OrderingTerm.desc(t.rating),
+          (t) => OrderingTerm.asc(t.title),
+        ]);
+        break;
       case 'date_added':
       default:
         query.orderBy([(t) => OrderingTerm.desc(t.addedAt)]);
@@ -263,6 +269,19 @@ class BookRepository {
     return newFav;
   }
 
+  /// Update book rating (1-5, or null to clear)
+  Future<void> updateRating(int bookId, int? rating) async {
+    if (rating != null && (rating < 0 || rating > 5)) {
+      throw const DatabaseException('Rating harus antara 0 sampai 5');
+    }
+    await (db.update(db.books)..where((tbl) => tbl.id.equals(bookId))).write(
+      BooksCompanion(
+        rating: Value(rating),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   /// Calculates overall reading progress percentage [0.0 - 1.0]
   Future<double> getOverallProgressPct(int bookId) async {
     final progress = await getReadingProgress(bookId);
@@ -286,6 +305,7 @@ class BookRepository {
       'isbn': b.isbn,
       'readingStatus': b.readingStatus,
       'isFavorite': b.isFavorite,
+      'rating': b.rating,
       'addedAt': b.addedAt.toIso8601String(),
       'lastOpenedAt': b.lastOpenedAt?.toIso8601String(),
     }).toList();
