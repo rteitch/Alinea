@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers.dart';
 import '../../../app/theme/app_theme.dart';
+import '../../../core/notifications/reminder_service.dart';
 import '../../glossary/presentation/glossary_screen.dart';
 import '../../translation/presentation/translation_history_screen.dart';
 import 'about_screen.dart';
@@ -1077,10 +1078,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               : 'Pengingat tidak aktif',
                         ),
                         value: settings.reminderEnabled,
-                        onChanged: (val) {
+                        onChanged: (val) async {
                           ref.read(appSettingsProvider.notifier).save(
                             settings.copyWith(reminderEnabled: val),
                           );
+                          if (val) {
+                            final granted =
+                                await ReminderService.requestPermission();
+                            if (granted) {
+                              await ReminderService.scheduleDaily(
+                                hour: settings.reminderHour,
+                                minute: settings.reminderMinute,
+                              );
+                            }
+                          } else {
+                            await ReminderService.cancel();
+                          }
                         },
                       ),
                       if (settings.reminderEnabled) ...[
@@ -1104,6 +1117,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       reminderHour: picked.hour,
                                       reminderMinute: picked.minute,
                                     ),
+                                  );
+                                  await ReminderService.scheduleDaily(
+                                    hour: picked.hour,
+                                    minute: picked.minute,
                                   );
                                 }
                               },
