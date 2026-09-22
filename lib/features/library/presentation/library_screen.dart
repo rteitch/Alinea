@@ -24,6 +24,7 @@ import 'reading_distribution_screen.dart';
 import 'bookshelf_magazine_view.dart';
 import 'vocabulary_builder_screen.dart';
 import 'reading_goals_dashboard.dart';
+import 'reading_insights_screen.dart';
 import 'book_quick_actions.dart';
 
 final collectionFilterProvider = StateProvider<int?>((ref) => null);
@@ -247,9 +248,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 case 'goals':
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingGoalsDashboard()));
                   break;
+                case 'insights':
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ReadingInsightsScreen()));
+                  break;
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(value: 'insights', child: ListTile(leading: Icon(Icons.dashboard_rounded), title: Text('Ringkasan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'challenges', child: ListTile(leading: Icon(Icons.emoji_events_rounded), title: Text('Tantangan Membaca'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'achievements', child: ListTile(leading: Icon(Icons.workspace_premium_rounded), title: Text('Pencapaian'), dense: true, contentPadding: EdgeInsets.zero)),
               const PopupMenuItem(value: 'comparison', child: ListTile(leading: Icon(Icons.bar_chart_rounded), title: Text('Perbandingan Buku'), dense: true, contentPadding: EdgeInsets.zero)),
@@ -470,8 +475,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: ref.watch(appSettingsProvider).gridColumns,
                             childAspectRatio: 0.58,
                             crossAxisSpacing: 14,
                             mainAxisSpacing: 14,

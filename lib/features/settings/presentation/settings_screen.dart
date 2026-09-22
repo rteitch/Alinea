@@ -1014,6 +1014,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
+          // Bookshelf grid columns
+          Text('Tampilan Perpustakaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final columns = ref.watch(appSettingsProvider).gridColumns;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Kolom Grid', style: TextStyle(fontSize: 13)),
+                          Text('$columns kolom', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                        ],
+                      ),
+                      Slider(
+                        value: columns.toDouble(),
+                        min: 2,
+                        max: 4,
+                        divisions: 2,
+                        label: '$columns kolom',
+                        onChanged: (val) {
+                          ref.read(appSettingsProvider.notifier).save(
+                            ref.read(appSettingsProvider).copyWith(gridColumns: val.toInt()),
+                          );
+                        },
+                      ),
+                      Text(
+                        'Atur jumlah kolom tampilan grid buku (2–4)',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Reading Reminder
           Text('Pengingat Membaca', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),

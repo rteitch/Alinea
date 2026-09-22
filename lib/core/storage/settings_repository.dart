@@ -19,6 +19,7 @@ class AppSettings {
   final bool reminderEnabled;
   final int reminderHour;
   final int reminderMinute;
+  final int gridColumns;
 
   const AppSettings({
     this.gatewayUrl = 'http://10.0.2.2:8000/v1',
@@ -35,6 +36,7 @@ class AppSettings {
     this.reminderEnabled = false,
     this.reminderHour = 20,
     this.reminderMinute = 0,
+    this.gridColumns = 2,
   });
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +54,7 @@ class AppSettings {
         'reminderEnabled': reminderEnabled,
         'reminderHour': reminderHour,
         'reminderMinute': reminderMinute,
+        'gridColumns': gridColumns,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
@@ -70,6 +73,7 @@ class AppSettings {
       reminderEnabled: json['reminderEnabled'] as bool? ?? false,
       reminderHour: (json['reminderHour'] as num?)?.toInt() ?? 20,
       reminderMinute: (json['reminderMinute'] as num?)?.toInt() ?? 0,
+      gridColumns: (json['gridColumns'] as num?)?.toInt() ?? 2,
     );
   }
 
@@ -88,6 +92,7 @@ class AppSettings {
     bool? reminderEnabled,
     int? reminderHour,
     int? reminderMinute,
+    int? gridColumns,
   }) {
     return AppSettings(
       gatewayUrl: gatewayUrl ?? this.gatewayUrl,
@@ -104,6 +109,7 @@ class AppSettings {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderHour: reminderHour ?? this.reminderHour,
       reminderMinute: reminderMinute ?? this.reminderMinute,
+      gridColumns: gridColumns ?? this.gridColumns,
     );
   }
 }
